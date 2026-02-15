@@ -1,191 +1,782 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Real Estate Financial Modeling Platform</title>
-
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-<style>
-body { font-family: 'Inter', sans-serif; }
-.tab-active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-.module-card { background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.07); transition: 0.3s; }
-.module-card:hover { box-shadow: 0 10px 20px rgba(0,0,0,0.12); transform: translateY(-2px); }
-.gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); transition: 0.3s; }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
-.notification { position: fixed; top:20px; right:20px; padding:12px 20px; border-radius:8px; color:white; font-weight:600; z-index:1000;}
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:50;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Estate Financial Modeling Platform</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+        }
+        .module-card { 
+            background: white; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07); 
+            transition: all 0.3s; 
+        }
+        .module-card:hover { 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12); 
+            transform: translateY(-2px); 
+        }
+        .gradient-bg { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+        }
+        input[type="number"], input[type="text"], input[type="date"], select, textarea { 
+            transition: all 0.2s; 
+        }
+        input:focus, select:focus, textarea:focus { 
+            outline: none; 
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            transition: all 0.3s; 
+        }
+        .btn-primary:hover { 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); 
+        }
+    </style>
 </head>
-
 <body class="bg-gray-50">
-<div id="root"></div>
+    <div id="root"></div>
 
-<script type="text/babel">
+    <script type="text/babel">
+        const { useState, useMemo } = React;
 
-const { useState, useEffect } = React;
+        function RealEstatePlatform() {
+            // State
+            const [activeModule, setActiveModule] = useState('overview');
+            const [activeTab, setActiveTab] = useState('timeline');
+            
+            // Module 1 State
+            const [projectName, setProjectName] = useState('Skyline Mixed-Use Development');
+            const [projectStart, setProjectStart] = useState('2025-01-01');
+            const [preConstructionMonths, setPreConstructionMonths] = useState(6);
+            const [constructionMonths, setConstructionMonths] = useState(24);
+            const [operationsMonths, setOperationsMonths] = useState(60);
+            
+            const [landAcquisitionType, setLandAcquisitionType] = useState('cash');
+            const [landValue, setLandValue] = useState(50000000);
+            const [totalLandArea, setTotalLandArea] = useState(100000);
+            const [gfa, setGfa] = useState(150000);
+            const [bua, setBua] = useState(120000);
+            const [residentialArea, setResidentialArea] = useState(60000);
+            const [hospitalityArea, setHospitalityArea] = useState(30000);
+            const [retailArea, setRetailArea] = useState(30000);
 
-function RealEstatePlatform(){
+            // Development Costs State
+            const [devCosts, setDevCosts] = useState([
+                { 
+                    id: 1, 
+                    name: 'Infrastructure Development', 
+                    method: 'sqm', 
+                    amount: 0, 
+                    rate: 150, 
+                    percentage: 0, 
+                    startMonth: 1, 
+                    endMonth: 6,
+                    phasing: '30,25,20,15,7,3'
+                },
+                { 
+                    id: 2, 
+                    name: 'Construction - Residential', 
+                    method: 'sqm', 
+                    amount: 0, 
+                    rate: 1200, 
+                    percentage: 0, 
+                    startMonth: 7, 
+                    endMonth: 30,
+                    phasing: '2,3,4,5,6,7,8,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,1'
+                },
+                { 
+                    id: 3, 
+                    name: 'Construction - Hospitality', 
+                    method: 'sqm', 
+                    amount: 0, 
+                    rate: 1500, 
+                    percentage: 0, 
+                    startMonth: 7, 
+                    endMonth: 30,
+                    phasing: '2,3,4,5,6,7,8,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,1'
+                },
+                { 
+                    id: 4, 
+                    name: 'Construction - Retail', 
+                    method: 'sqm', 
+                    amount: 0, 
+                    rate: 1000, 
+                    percentage: 0, 
+                    startMonth: 7, 
+                    endMonth: 30,
+                    phasing: '2,3,4,5,6,7,8,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,1'
+                },
+                { 
+                    id: 5, 
+                    name: 'Professional Fees', 
+                    method: 'percentage', 
+                    amount: 0, 
+                    rate: 0, 
+                    percentage: 5, 
+                    startMonth: 1, 
+                    endMonth: 30,
+                    phasing: 'even'
+                },
+                { 
+                    id: 6, 
+                    name: 'Government & Statutory', 
+                    method: 'fixed', 
+                    amount: 5000000, 
+                    rate: 0, 
+                    percentage: 0, 
+                    startMonth: 1, 
+                    endMonth: 12,
+                    phasing: '40,30,15,5,3,2,2,1,1,0.5,0.5,0'
+                }
+            ]);
 
-/* ===================== SAVE / LOAD STATES ===================== */
-const [notification,setNotification]=useState(null);
-const [showSaveModal,setShowSaveModal]=useState(false);
-const [showLoadModal,setShowLoadModal]=useState(false);
-const [savedProjects,setSavedProjects]=useState([]);
-const [saveProjectName,setSaveProjectName]=useState("");
+            // Financing State
+            const [debtPercentage, setDebtPercentage] = useState(60);
+            const [interestRate, setInterestRate] = useState(7.5);
+            const [debtDrawdownStart, setDebtDrawdownStart] = useState(7);
+            const [interestCapitalized, setInterestCapitalized] = useState(true);
+            const [investors, setInvestors] = useState([
+                { id: 1, name: 'Investor A', equityPercentage: 60 },
+                { id: 2, name: 'Investor B', equityPercentage: 40 }
+            ]);
 
-/* ===================== ORIGINAL STATES (UNCHANGED) ===================== */
-const [activeModule,setActiveModule]=useState('overview');
-const [activeTab,setActiveTab]=useState('timeline');
+            // Helper Functions
+            const formatCurrency = (value) => {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(value);
+            };
 
-const [projectName,setProjectName]=useState('Skyline Mixed-Use Development');
-const [projectStart,setProjectStart]=useState('2025-01-01');
-const [preConstructionMonths,setPreConstructionMonths]=useState(6);
-const [constructionMonths,setConstructionMonths]=useState(24);
-const [operationsMonths,setOperationsMonths]=useState(60);
+            const calculateTotalDevCost = (cost, baseCosts) => {
+                const totalArea = residentialArea + hospitalityArea + retailArea;
+                
+                if (cost.method === 'fixed') {
+                    return cost.amount;
+                } else if (cost.method === 'sqm') {
+                    return cost.rate * totalArea;
+                } else if (cost.method === 'percentage') {
+                    const baseConstructionTotal = baseCosts.reduce((sum, bc) => sum + bc, 0);
+                    return (cost.percentage / 100) * baseConstructionTotal;
+                }
+                return 0;
+            };
 
-const [landAcquisitionType,setLandAcquisitionType]=useState('cash');
-const [landValue,setLandValue]=useState(50000000);
-const [totalLandArea,setTotalLandArea]=useState(100000);
-const [gfa,setGfa]=useState(150000);
-const [bua,setBua]=useState(120000);
-const [residentialArea,setResidentialArea]=useState(60000);
-const [hospitalityArea,setHospitalityArea]=useState(30000);
-const [retailArea,setRetailArea]=useState(30000);
+            // Cost CRUD
+            const addCost = () => {
+                const newId = Math.max(...devCosts.map(c => c.id), 0) + 1;
+                setDevCosts([...devCosts, {
+                    id: newId, 
+                    name: 'New Cost Item', 
+                    method: 'fixed', 
+                    amount: 0, 
+                    rate: 0,
+                    percentage: 0, 
+                    startMonth: 1, 
+                    endMonth: preConstructionMonths + constructionMonths,
+                    phasing: 'even'
+                }]);
+            };
 
-const [devCosts,setDevCosts]=useState([...]);   // KEEP YOUR FULL ARRAY HERE
-const [debtPercentage,setDebtPercentage]=useState(60);
-const [interestRate,setInterestRate]=useState(7.5);
-const [debtDrawdownStart,setDebtDrawdownStart]=useState(7);
-const [interestCapitalized,setInterestCapitalized]=useState(true);
-const [investors,setInvestors]=useState([...]); // KEEP YOUR FULL ARRAY HERE
+            const updateCost = (id, field, value) => {
+                setDevCosts(devCosts.map(cost => cost.id === id ? { ...cost, [field]: value } : cost));
+            };
 
+            const deleteCost = (id) => {
+                setDevCosts(devCosts.filter(cost => cost.id !== id));
+            };
 
-/* ===================== SAVE / LOAD LOGIC ===================== */
+            // Investor CRUD
+            const addInvestor = () => {
+                const newId = Math.max(...investors.map(i => i.id), 0) + 1;
+                setInvestors([...investors, {
+                    id: newId,
+                    name: `Investor ${String.fromCharCode(65 + investors.length)}`,
+                    equityPercentage: 0
+                }]);
+            };
 
-const getProjectData=()=>({
-projectName,projectStart,preConstructionMonths,constructionMonths,operationsMonths,
-landAcquisitionType,landValue,totalLandArea,gfa,bua,residentialArea,hospitalityArea,retailArea,
-devCosts,debtPercentage,interestRate,debtDrawdownStart,interestCapitalized,investors
-});
+            const updateInvestor = (id, field, value) => {
+                setInvestors(investors.map(inv => inv.id === id ? { ...inv, [field]: value } : inv));
+            };
 
-const loadSavedProjectsList=()=>{
-const saved=localStorage.getItem("realestate_projects");
-if(saved){ setSavedProjects(JSON.parse(saved)); }
-};
+            const deleteInvestor = (id) => {
+                setInvestors(investors.filter(inv => inv.id !== id));
+            };
 
-useEffect(()=>{ loadSavedProjectsList(); },[]);
+            // Calculations
+            const totalMonths = preConstructionMonths + constructionMonths + operationsMonths;
+            const totalArea = residentialArea + hospitalityArea + retailArea;
+            
+            const baseConstructionCosts = devCosts
+                .filter(c => c.method !== 'percentage')
+                .map(cost => calculateTotalDevCost(cost, []));
+            
+            const totalDevCosts = devCosts.map(cost => 
+                calculateTotalDevCost(cost, baseConstructionCosts)
+            );
+            
+            const totalDevCost = totalDevCosts.reduce((sum, cost) => sum + cost, 0);
+            const totalProjectCost = totalDevCost + (landAcquisitionType === 'cash' ? landValue : 0);
 
-useEffect(()=>{
-const interval=setInterval(()=>{
-localStorage.setItem("realestate_autosave",JSON.stringify(getProjectData()));
-},30000);
-return()=>clearInterval(interval);
-});
+            return (
+                <div className="min-h-screen pb-12">
+                    {/* Header */}
+                    <div className="gradient-bg text-white py-8 px-6 shadow-lg">
+                        <div className="max-w-7xl mx-auto">
+                            <h1 className="text-4xl font-bold mb-2">Real Estate Financial Modeling Platform</h1>
+                            <p className="text-blue-100 text-lg">Complete Feasibility Analysis with 5-Year Financial Statements</p>
+                        </div>
+                    </div>
 
-const saveProject=()=>{
-const name=saveProjectName||projectName;
-const project={
-id:Date.now().toString(),
-name,
-timestamp:new Date().toISOString(),
-data:getProjectData()
-};
-const updated=[...savedProjects.filter(p=>p.name!==name),project];
-localStorage.setItem("realestate_projects",JSON.stringify(updated));
-setSavedProjects(updated);
-setShowSaveModal(false);
-setSaveProjectName("");
-showNotification("✓ Project Saved","green");
-};
+                    <div className="max-w-7xl mx-auto px-6 mt-8">
+                        {/* OVERVIEW */}
+                        {activeModule === 'overview' && (
+                            <div>
+                                <h2 className="text-3xl font-bold mb-8 text-gray-800">Select Module</h2>
+                                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                    <div 
+                                        className="module-card p-6 cursor-pointer" 
+                                        onClick={() => {
+                                            setActiveModule('module1');
+                                            setActiveTab('timeline');
+                                        }}
+                                    >
+                                        <div className="text-4xl mb-4">🏗️</div>
+                                        <h3 className="text-xl font-bold mb-2 text-gray-800">Module 1</h3>
+                                        <p className="text-gray-600 mb-4">Development Plan</p>
+                                        <p className="text-sm text-gray-500">Timeline, land, costs & financing</p>
+                                    </div>
+                                    
+                                    <div className="module-card p-6 cursor-pointer opacity-50">
+                                        <div className="text-4xl mb-4">💰</div>
+                                        <h3 className="text-xl font-bold mb-2 text-gray-800">Module 2</h3>
+                                        <p className="text-gray-600 mb-4">Revenue & Operations</p>
+                                        <p className="text-sm text-gray-500">Coming soon...</p>
+                                    </div>
+                                    
+                                    <div className="module-card p-6 cursor-pointer opacity-50">
+                                        <div className="text-4xl mb-4">📊</div>
+                                        <h3 className="text-xl font-bold mb-2 text-gray-800">Module 3</h3>
+                                        <p className="text-gray-600 mb-4">Valuation & Exit</p>
+                                        <p className="text-sm text-gray-500">Coming soon...</p>
+                                    </div>
+                                    
+                                    <div className="module-card p-6 cursor-pointer opacity-50">
+                                        <div className="text-4xl mb-4">📈</div>
+                                        <h3 className="text-xl font-bold mb-2 text-gray-800">Module 4</h3>
+                                        <p className="text-gray-600 mb-4">Financial Statements</p>
+                                        <p className="text-sm text-gray-500">Coming soon...</p>
+                                    </div>
+                                </div>
 
-const loadProject=(p)=>{
-const d=p.data;
-Object.entries(d).forEach(([key,val])=>{
-if(eval(`typeof ${key} !== "undefined"`)){
-eval(`set${key.charAt(0).toUpperCase()+key.slice(1)}(val)`);
-}
-});
-setShowLoadModal(false);
-showNotification("✓ Project Loaded","green");
-};
+                                {/* Project Summary */}
+                                <div className="module-card p-8">
+                                    <h2 className="text-2xl font-bold mb-6 text-gray-800">Project Summary: {projectName}</h2>
+                                    <div className="grid md:grid-cols-3 gap-6">
+                                        <div>
+                                            <p className="text-sm text-gray-600 mb-1">Total Project Cost</p>
+                                            <p className="text-2xl font-bold text-gray-800">{formatCurrency(totalProjectCost)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600 mb-1">Total Development Cost</p>
+                                            <p className="text-2xl font-bold text-green-600">{formatCurrency(totalDevCost)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600 mb-1">Total Area</p>
+                                            <p className="text-2xl font-bold text-blue-600">{totalArea.toLocaleString()} sqm</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-const deleteProject=(id)=>{
-const updated=savedProjects.filter(p=>p.id!==id);
-localStorage.setItem("realestate_projects",JSON.stringify(updated));
-setSavedProjects(updated);
-};
+                        {/* MODULE 1 */}
+                        {activeModule === 'module1' && (
+                            <div>
+                                <div className="flex items-center justify-between mb-6">
+                                    <button 
+                                        onClick={() => setActiveModule('overview')} 
+                                        className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2"
+                                    >
+                                        ← Back to Overview
+                                    </button>
+                                    <h2 className="text-3xl font-bold text-gray-800">Module 1: Development Plan</h2>
+                                    <div></div>
+                                </div>
 
-const exportProject=()=>{
-const blob=new Blob([JSON.stringify(getProjectData(),null,2)],{type:'application/json'});
-const url=URL.createObjectURL(blob);
-const a=document.createElement("a");
-a.href=url;
-a.download=`${projectName}.json`;
-a.click();
-};
+                                {/* Tabs */}
+                                <div className="bg-white rounded-lg shadow-sm mb-6">
+                                    <div className="flex border-b overflow-x-auto">
+                                        {['timeline', 'land', 'costs', 'financing'].map(tab => (
+                                            <button
+                                                key={tab}
+                                                onClick={() => setActiveTab(tab)}
+                                                className={`px-6 py-4 font-medium transition-all whitespace-nowrap ${
+                                                    activeTab === tab ? 'tab-active' : 'text-gray-600 hover:text-blue-600'
+                                                }`}
+                                            >
+                                                {tab === 'timeline' && '📅 Timeline'}
+                                                {tab === 'land' && '🏗️ Land & Area'}
+                                                {tab === 'costs' && '💰 Development Costs'}
+                                                {tab === 'financing' && '🏦 Financing'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
 
-const importProject=(e)=>{
-const file=e.target.files[0];
-const reader=new FileReader();
-reader.onload=(ev)=>{
-const data=JSON.parse(ev.target.result);
-loadProject({data});
-};
-reader.readAsText(file);
-};
+                                {/* Tab Content */}
+                                {activeTab === 'timeline' && (
+                                    <div className="module-card p-6">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Project Timeline</h3>
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Project Name
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={projectName}
+                                                    onChange={(e) => setProjectName(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Project Start Date
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={projectStart}
+                                                    onChange={(e) => setProjectStart(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Pre-Construction (months)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={preConstructionMonths}
+                                                    onChange={(e) => setPreConstructionMonths(Number(e.target.value))}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                    min="0"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Construction Phase (months)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={constructionMonths}
+                                                    onChange={(e) => setConstructionMonths(Number(e.target.value))}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                    min="0"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Operations Phase (months)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={operationsMonths}
+                                                    onChange={(e) => setOperationsMonths(Number(e.target.value))}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                    min="0"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                                            <p className="text-sm text-blue-800">
+                                                <strong>Total Project Duration:</strong> {totalMonths} months 
+                                                ({(totalMonths / 12).toFixed(1)} years)
+                                            </p>
+                                            <p className="text-sm text-blue-800 mt-2">
+                                                <strong>Breakdown:</strong> Pre-construction: {preConstructionMonths}m | 
+                                                Construction: {constructionMonths}m | Operations: {operationsMonths}m
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
 
-const showNotification=(msg,color)=>{
-setNotification({msg,color});
-setTimeout(()=>setNotification(null),3000);
-};
+                                {activeTab === 'land' && (
+                                    <div className="module-card p-6">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Land & Area Assumptions</h3>
+                                        
+                                        <div className="mb-8">
+                                            <h4 className="text-lg font-semibold mb-4 text-gray-700">Land Acquisition</h4>
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Acquisition Type
+                                                    </label>
+                                                    <select
+                                                        value={landAcquisitionType}
+                                                        onChange={(e) => setLandAcquisitionType(e.target.value)}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                    >
+                                                        <option value="cash">Cash Purchase</option>
+                                                        <option value="inkind">In-Kind Contribution</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Land Value ($)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={landValue}
+                                                        onChange={(e) => setLandValue(Number(e.target.value))}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Total Land Area (sqm)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={totalLandArea}
+                                                        onChange={(e) => setTotalLandArea(Number(e.target.value))}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
 
-/* ===================== YOUR ORIGINAL CALCULATIONS ===================== */
-// (ALL YOUR CALCULATIONS REMAIN SAME HERE)
+                                        <div className="mb-8">
+                                            <h4 className="text-lg font-semibold mb-4 text-gray-700">Building Areas</h4>
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Gross Floor Area - GFA (sqm)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={gfa}
+                                                        onChange={(e) => setGfa(Number(e.target.value))}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Built-Up Area - BUA (sqm)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={bua}
+                                                        onChange={(e) => setBua(Number(e.target.value))}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
 
-/* ===================== UI ===================== */
+                                        <div>
+                                            <h4 className="text-lg font-semibold mb-4 text-gray-700">Area Allocation by Asset</h4>
+                                            <div className="grid md:grid-cols-3 gap-6">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Residential (sqm)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={residentialArea}
+                                                        onChange={(e) => setResidentialArea(Number(e.target.value))}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Hospitality (sqm)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={hospitalityArea}
+                                                        onChange={(e) => setHospitalityArea(Number(e.target.value))}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Retail (sqm)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={retailArea}
+                                                        onChange={(e) => setRetailArea(Number(e.target.value))}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 p-4 bg-green-50 rounded-lg">
+                                                <p className="text-sm text-green-800">
+                                                    <strong>Total Allocated Area:</strong> {totalArea.toLocaleString()} sqm
+                                                </p>
+                                                <p className="text-sm text-green-800 mt-1">
+                                                    <strong>Breakdown:</strong> Residential: {((residentialArea/totalArea)*100).toFixed(1)}% | 
+                                                    Hospitality: {((hospitalityArea/totalArea)*100).toFixed(1)}% | 
+                                                    Retail: {((retailArea/totalArea)*100).toFixed(1)}%
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
-return(
-<div>
+                                {activeTab === 'costs' && (
+                                    <div className="module-card p-6">
+                                        <div className="flex justify-between items-center mb-6">
+                                            <h3 className="text-2xl font-bold text-gray-800">Development Costs with Phasing</h3>
+                                            <button onClick={addCost} className="btn-primary text-white px-4 py-2 rounded-lg">
+                                                + Add Cost Item
+                                            </button>
+                                        </div>
 
-{/* Notification */}
-{notification&&(
-<div className={`notification bg-${notification.color}-600`}>
-{notification.msg}
-</div>
-)}
+                                        <div className="mb-4 p-4 bg-blue-50 rounded-lg text-sm text-blue-800">
+                                            <strong>Phasing Guide:</strong> Enter comma-separated percentages (e.g., "30,25,20,15,10") or "even" for equal distribution.
+                                        </div>
 
-{/* Header with Save Buttons */}
-<div className="gradient-bg text-white py-6 px-6 shadow-lg">
-<div className="max-w-7xl mx-auto flex justify-between items-center">
-<div>
-<h1 className="text-3xl font-bold">Real Estate Financial Modeling Platform</h1>
-</div>
-<div className="flex gap-2">
-<button onClick={()=>setShowSaveModal(true)} className="bg-green-600 px-4 py-2 rounded">💾 Save</button>
-<button onClick={()=>setShowLoadModal(true)} className="bg-blue-600 px-4 py-2 rounded">📂 Load</button>
-<button onClick={exportProject} className="bg-purple-600 px-4 py-2 rounded">📥 Export</button>
-<label className="bg-indigo-600 px-4 py-2 rounded cursor-pointer">
-📤 Import
-<input type="file" accept=".json" onChange={importProject} className="hidden"/>
-</label>
-</div>
-</div>
-</div>
+                                        <div className="space-y-4">
+                                            {devCosts.map(cost => {
+                                                const baseCosts = devCosts
+                                                    .filter(c => c.method !== 'percentage')
+                                                    .map(c => calculateTotalDevCost(c, []));
+                                                const costTotal = calculateTotalDevCost(cost, baseCosts);
+                                                
+                                                return (
+                                                    <div key={cost.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                                        <div className="grid md:grid-cols-4 gap-4 mb-3">
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-700 mb-1">Cost Item Name</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={cost.name}
+                                                                    onChange={(e) => updateCost(cost.id, 'name', e.target.value)}
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-700 mb-1">Method</label>
+                                                                <select
+                                                                    value={cost.method}
+                                                                    onChange={(e) => updateCost(cost.id, 'method', e.target.value)}
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                                                                >
+                                                                    <option value="fixed">Fixed Amount</option>
+                                                                    <option value="sqm">Rate per SQM</option>
+                                                                    <option value="percentage">% of Base Costs</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-700 mb-1">Value</label>
+                                                                {cost.method === 'fixed' && (
+                                                                    <input type="number" value={cost.amount} 
+                                                                        onChange={(e) => updateCost(cost.id, 'amount', Number(e.target.value))}
+                                                                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm" 
+                                                                        placeholder="Amount ($)" />
+                                                                )}
+                                                                {cost.method === 'sqm' && (
+                                                                    <input type="number" value={cost.rate}
+                                                                        onChange={(e) => updateCost(cost.id, 'rate', Number(e.target.value))}
+                                                                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm" 
+                                                                        placeholder="$/sqm" />
+                                                                )}
+                                                                {cost.method === 'percentage' && (
+                                                                    <input type="number" value={cost.percentage}
+                                                                        onChange={(e) => updateCost(cost.id, 'percentage', Number(e.target.value))}
+                                                                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm" 
+                                                                        placeholder="%" />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-end">
+                                                                <button onClick={() => deleteCost(cost.id)}
+                                                                    className="w-full px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700">
+                                                                    🗑️ Delete
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid md:grid-cols-3 gap-4">
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-700 mb-1">Start Month</label>
+                                                                <input type="number" value={cost.startMonth}
+                                                                    onChange={(e) => updateCost(cost.id, 'startMonth', Number(e.target.value))}
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm" min="1" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-700 mb-1">End Month</label>
+                                                                <input type="number" value={cost.endMonth}
+                                                                    onChange={(e) => updateCost(cost.id, 'endMonth', Number(e.target.value))}
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm" min="1" />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                                    Total Cost
+                                                                </label>
+                                                                <input type="text" value={formatCurrency(costTotal)} readOnly
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm bg-gray-100 font-semibold" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-3">
+                                                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                                Phasing (% per month or "even")
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={cost.phasing}
+                                                                onChange={(e) => updateCost(cost.id, 'phasing', e.target.value)}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                                                                placeholder="e.g., 30,25,20,15,10 or even"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
 
-{/* ===== YOUR ENTIRE ORIGINAL UI CONTINUES HERE UNCHANGED ===== */}
+                                        <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                                            <p className="text-sm text-green-800">
+                                                <strong>Total Development Cost:</strong> {formatCurrency(totalDevCost)}
+                                            </p>
+                                            <p className="text-sm text-green-800 mt-1">
+                                                <strong>Total Project Cost (with land):</strong> {formatCurrency(totalProjectCost)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
 
-</div>
-);
-}
+                                {activeTab === 'financing' && (
+                                    <div className="space-y-6">
+                                        <div className="module-card p-6">
+                                            <h3 className="text-2xl font-bold mb-6 text-gray-800">Capital Structure</h3>
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Debt Percentage (%)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={debtPercentage}
+                                                        onChange={(e) => setDebtPercentage(Number(e.target.value))}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                        min="0" max="100" step="0.1"
+                                                    />
+                                                    <p className="text-sm text-gray-500 mt-1">Equity: {(100 - debtPercentage).toFixed(1)}%</p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Interest Rate (% p.a.)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={interestRate}
+                                                        onChange={(e) => setInterestRate(Number(e.target.value))}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                        min="0" step="0.1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Debt Drawdown Start Month</label>
+                                                    <input
+                                                        type="number"
+                                                        value={debtDrawdownStart}
+                                                        onChange={(e) => setDebtDrawdownStart(Number(e.target.value))}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                        min="1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="flex items-center space-x-2 mt-8">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={interestCapitalized}
+                                                            onChange={(e) => setInterestCapitalized(e.target.checked)}
+                                                            className="w-4 h-4 text-blue-600"
+                                                        />
+                                                        <span className="text-sm font-medium text-gray-700">Capitalize Interest During Construction</span>
+                                                    </label>
+                                                </div>
+                                            </div>
 
-ReactDOM.render(<RealEstatePlatform/>,document.getElementById('root'));
-</script>
+                                            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                                                <p className="text-sm text-blue-800">
+                                                    <strong>Total Debt:</strong> {formatCurrency(totalProjectCost * (debtPercentage/100))}
+                                                </p>
+                                                <p className="text-sm text-blue-800 mt-1">
+                                                    <strong>Total Equity:</strong> {formatCurrency(totalProjectCost * ((100-debtPercentage)/100))}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="module-card p-6">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <h3 className="text-2xl font-bold text-gray-800">Equity Investors</h3>
+                                                <button onClick={addInvestor} className="btn-primary text-white px-4 py-2 rounded-lg">
+                                                    + Add Investor
+                                                </button>
+                                            </div>
+                                            <div className="space-y-4">
+                                                {investors.map(inv => (
+                                                    <div key={inv.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                                                        <input
+                                                            type="text"
+                                                            value={inv.name}
+                                                            onChange={(e) => updateInvestor(inv.id, 'name', e.target.value)}
+                                                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+                                                            placeholder="Investor Name"
+                                                        />
+                                                        <input
+                                                            type="number"
+                                                            value={inv.equityPercentage}
+                                                            onChange={(e) => updateInvestor(inv.id, 'equityPercentage', Number(e.target.value))}
+                                                            className="w-32 px-4 py-2 border border-gray-300 rounded-lg"
+                                                            placeholder="%" min="0" max="100" step="0.1"
+                                                        />
+                                                        <span className="text-gray-600">%</span>
+                                                        <button onClick={() => deleteInvestor(inv.id)}
+                                                            className="text-red-600 hover:text-red-800">🗑️</button>
+                                                    </div>
+                                                ))}
+                                                <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
+                                                    <p className="text-sm text-yellow-800">
+                                                        <strong>Total Equity Allocation:</strong> {investors.reduce((sum, inv) => sum + inv.equityPercentage, 0).toFixed(1)}%
+                                                        {investors.reduce((sum, inv) => sum + inv.equityPercentage, 0) !== 100 && 
+                                                            <span className="ml-2 text-red-600">⚠️ Should total 100%</span>
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<RealEstatePlatform />, document.getElementById('root'));
+    </script>
 </body>
 </html>
