@@ -28,10 +28,10 @@
         .gradient-bg { 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
         }
-        input[type="number"], input[type="text"], input[type="date"], select, textarea { 
+        input[type="number"], input[type="text"], input[type="date"], select { 
             transition: all 0.2s; 
         }
-        input:focus, select:focus, textarea:focus { 
+        input:focus, select:focus { 
             outline: none; 
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -44,6 +44,76 @@
             transform: translateY(-1px); 
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); 
         }
+        .table-container {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.875rem;
+        }
+        th {
+            position: sticky;
+            top: 0;
+            background: #1f2937;
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem;
+            text-align: center;
+            border: 1px solid #374151;
+        }
+        td {
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            text-align: right;
+        }
+        td:first-child {
+            text-align: left;
+            font-weight: 500;
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 1;
+        }
+        .total-row {
+            background: #e0e7ff;
+            font-weight: 700;
+        }
+        .warning {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        .success {
+            color: #16a34a;
+            font-weight: 600;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.75rem;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -53,107 +123,95 @@
         const { useState, useMemo } = React;
 
         function RealEstatePlatform() {
-            // State
+            // ========== STATE ==========
             const [activeModule, setActiveModule] = useState('overview');
             const [activeTab, setActiveTab] = useState('timeline');
             
-            // Module 1 State
+            // Project Details & Timeline
             const [projectName, setProjectName] = useState('Skyline Mixed-Use Development');
+            const [projectType, setProjectType] = useState('mixed-use');
+            const [modelType, setModelType] = useState('monthly'); // monthly or annual
             const [projectStart, setProjectStart] = useState('2025-01-01');
-            const [preConstructionMonths, setPreConstructionMonths] = useState(6);
-            const [constructionMonths, setConstructionMonths] = useState(24);
-            const [operationsMonths, setOperationsMonths] = useState(60);
+            const [constructionPeriods, setConstructionPeriods] = useState(24);
+            const [operationsPeriods, setOperationsPeriods] = useState(60);
             
-            const [landAcquisitionType, setLandAcquisitionType] = useState('cash');
-            const [landValue, setLandValue] = useState(50000000);
+            // Land Acquisition - Split Cash/In-Kind
+            const [cashPercent, setCashPercent] = useState(60);
+            const [inKindPercent, setInKindPercent] = useState(40);
             const [totalLandArea, setTotalLandArea] = useState(100000);
-            const [gfa, setGfa] = useState(150000);
-            const [bua, setBua] = useState(120000);
-            const [residentialArea, setResidentialArea] = useState(60000);
-            const [hospitalityArea, setHospitalityArea] = useState(30000);
-            const [retailArea, setRetailArea] = useState(30000);
-
-            // Development Costs State
-            const [devCosts, setDevCosts] = useState([
-                { 
-                    id: 1, 
-                    name: 'Infrastructure Development', 
-                    method: 'sqm', 
-                    amount: 0, 
-                    rate: 150, 
-                    percentage: 0, 
-                    startMonth: 1, 
-                    endMonth: 6,
-                    phasing: '30,25,20,15,7,3'
-                },
-                { 
-                    id: 2, 
-                    name: 'Construction - Residential', 
-                    method: 'sqm', 
-                    amount: 0, 
-                    rate: 1200, 
-                    percentage: 0, 
-                    startMonth: 7, 
-                    endMonth: 30,
-                    phasing: '2,3,4,5,6,7,8,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,1'
-                },
-                { 
-                    id: 3, 
-                    name: 'Construction - Hospitality', 
-                    method: 'sqm', 
-                    amount: 0, 
-                    rate: 1500, 
-                    percentage: 0, 
-                    startMonth: 7, 
-                    endMonth: 30,
-                    phasing: '2,3,4,5,6,7,8,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,1'
-                },
-                { 
-                    id: 4, 
-                    name: 'Construction - Retail', 
-                    method: 'sqm', 
-                    amount: 0, 
-                    rate: 1000, 
-                    percentage: 0, 
-                    startMonth: 7, 
-                    endMonth: 30,
-                    phasing: '2,3,4,5,6,7,8,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,1'
-                },
-                { 
-                    id: 5, 
-                    name: 'Professional Fees', 
-                    method: 'percentage', 
-                    amount: 0, 
-                    rate: 0, 
-                    percentage: 5, 
-                    startMonth: 1, 
-                    endMonth: 30,
-                    phasing: 'even'
-                },
-                { 
-                    id: 6, 
-                    name: 'Government & Statutory', 
-                    method: 'fixed', 
-                    amount: 5000000, 
-                    rate: 0, 
-                    percentage: 0, 
-                    startMonth: 1, 
-                    endMonth: 12,
-                    phasing: '40,30,15,5,3,2,2,1,1,0.5,0.5,0'
-                }
-            ]);
-
-            // Financing State
-            const [debtPercentage, setDebtPercentage] = useState(60);
+            const [landValuePerSqm, setLandValuePerSqm] = useState(500);
+            
+            // Area Allocation by Percentage
+            const [residentialPercent, setResidentialPercent] = useState(50);
+            const [hospitalityPercent, setHospitalityPercent] = useState(30);
+            const [retailPercent, setRetailPercent] = useState(20);
+            
+            // Roads/Open Areas by Asset
+            const [residentialRoadsPercent, setResidentialRoadsPercent] = useState(20);
+            const [hospitalityRoadsPercent, setHospitalityRoadsPercent] = useState(15);
+            const [retailRoadsPercent, setRetailRoadsPercent] = useState(10);
+            
+            // GFA/BUA Multipliers
+            const [residentialFAR, setResidentialFAR] = useState(1.5);
+            const [residentialEfficiency, setResidentialEfficiency] = useState(0.85);
+            const [hospitalityFAR, setHospitalityFAR] = useState(1.2);
+            const [hospitalityEfficiency, setHospitalityEfficiency] = useState(0.80);
+            const [retailFAR, setRetailFAR] = useState(1.0);
+            const [retailEfficiency, setRetailEfficiency] = useState(0.90);
+            
+            // Financing
             const [interestRate, setInterestRate] = useState(7.5);
-            const [debtDrawdownStart, setDebtDrawdownStart] = useState(7);
-            const [interestCapitalized, setInterestCapitalized] = useState(true);
-            const [investors, setInvestors] = useState([
-                { id: 1, name: 'Investor A', equityPercentage: 60 },
-                { id: 2, name: 'Investor B', equityPercentage: 40 }
-            ]);
+            const [capitalizeInterest, setCapitalizeInterest] = useState(true);
+            const [capitalStructureType, setCapitalStructureType] = useState('fixed'); // fixed or separate
+            const [fixedDebtPercent, setFixedDebtPercent] = useState(60);
+            const [financeDebtPercent, setFinanceDebtPercent] = useState(70);
+            
+            // Debt Repayment
+            const [repaymentMethod, setRepaymentMethod] = useState('agreed'); // agreed or sweep
+            const [repaymentPeriods, setRepaymentPeriods] = useState(120);
+            const [paymentType, setPaymentType] = useState('amortizing'); // amortizing or balloon
+            const [minCashReserve, setMinCashReserve] = useState(500000);
+            const [sweepPercent, setSweepPercent] = useState(100);
 
-            // Helper Functions
+            // ========== CALCULATIONS ==========
+            
+            const totalPeriods = constructionPeriods + operationsPeriods;
+            const periodLabel = modelType === 'monthly' ? 'Month' : 'Year';
+            const years = modelType === 'monthly' ? (totalPeriods / 12).toFixed(1) : totalPeriods;
+            
+            // Land Calculations
+            const cashLandArea = totalLandArea * (cashPercent / 100);
+            const inKindLandArea = totalLandArea * (inKindPercent / 100);
+            const cashLandValue = cashLandArea * landValuePerSqm;
+            const inKindLandValue = inKindLandArea * landValuePerSqm;
+            const totalLandValue = cashLandValue + inKindLandValue;
+            
+            // Area Allocations
+            const residentialTotalArea = totalLandArea * (residentialPercent / 100);
+            const hospitalityTotalArea = totalLandArea * (hospitalityPercent / 100);
+            const retailTotalArea = totalLandArea * (retailPercent / 100);
+            
+            const residentialRoadsArea = residentialTotalArea * (residentialRoadsPercent / 100);
+            const hospitalityRoadsArea = hospitalityTotalArea * (hospitalityRoadsPercent / 100);
+            const retailRoadsArea = retailTotalArea * (retailRoadsPercent / 100);
+            
+            const residentialNetArea = residentialTotalArea - residentialRoadsArea;
+            const hospitalityNetArea = hospitalityTotalArea - hospitalityRoadsArea;
+            const retailNetArea = retailTotalArea - retailRoadsArea;
+            
+            const residentialGFA = residentialNetArea * residentialFAR;
+            const residentialBUA = residentialGFA * residentialEfficiency;
+            const hospitalityGFA = hospitalityNetArea * hospitalityFAR;
+            const hospitalityBUA = hospitalityGFA * hospitalityEfficiency;
+            const retailGFA = retailNetArea * retailFAR;
+            const retailBUA = retailGFA * retailEfficiency;
+            
+            // Validations
+            const landPercentValid = cashPercent + inKindPercent === 100;
+            const areaPercentValid = residentialPercent + hospitalityPercent + retailPercent === 100;
+
+            // ========== HELPER FUNCTIONS ==========
+            
             const formatCurrency = (value) => {
                 return new Intl.NumberFormat('en-US', {
                     style: 'currency',
@@ -162,77 +220,26 @@
                     maximumFractionDigits: 0
                 }).format(value);
             };
-
-            const calculateTotalDevCost = (cost, baseCosts) => {
-                const totalArea = residentialArea + hospitalityArea + retailArea;
+            
+            const formatNumber = (value) => {
+                return new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(value);
+            };
+            
+            const calculateProjectEndDate = () => {
+                const start = new Date(projectStart);
+                const periodsToAdd = constructionPeriods + operationsPeriods;
                 
-                if (cost.method === 'fixed') {
-                    return cost.amount;
-                } else if (cost.method === 'sqm') {
-                    return cost.rate * totalArea;
-                } else if (cost.method === 'percentage') {
-                    const baseConstructionTotal = baseCosts.reduce((sum, bc) => sum + bc, 0);
-                    return (cost.percentage / 100) * baseConstructionTotal;
+                if (modelType === 'monthly') {
+                    start.setMonth(start.getMonth() + periodsToAdd);
+                } else {
+                    start.setFullYear(start.getFullYear() + periodsToAdd);
                 }
-                return 0;
+                
+                return start.toISOString().split('T')[0];
             };
-
-            // Cost CRUD
-            const addCost = () => {
-                const newId = Math.max(...devCosts.map(c => c.id), 0) + 1;
-                setDevCosts([...devCosts, {
-                    id: newId, 
-                    name: 'New Cost Item', 
-                    method: 'fixed', 
-                    amount: 0, 
-                    rate: 0,
-                    percentage: 0, 
-                    startMonth: 1, 
-                    endMonth: preConstructionMonths + constructionMonths,
-                    phasing: 'even'
-                }]);
-            };
-
-            const updateCost = (id, field, value) => {
-                setDevCosts(devCosts.map(cost => cost.id === id ? { ...cost, [field]: value } : cost));
-            };
-
-            const deleteCost = (id) => {
-                setDevCosts(devCosts.filter(cost => cost.id !== id));
-            };
-
-            // Investor CRUD
-            const addInvestor = () => {
-                const newId = Math.max(...investors.map(i => i.id), 0) + 1;
-                setInvestors([...investors, {
-                    id: newId,
-                    name: `Investor ${String.fromCharCode(65 + investors.length)}`,
-                    equityPercentage: 0
-                }]);
-            };
-
-            const updateInvestor = (id, field, value) => {
-                setInvestors(investors.map(inv => inv.id === id ? { ...inv, [field]: value } : inv));
-            };
-
-            const deleteInvestor = (id) => {
-                setInvestors(investors.filter(inv => inv.id !== id));
-            };
-
-            // Calculations
-            const totalMonths = preConstructionMonths + constructionMonths + operationsMonths;
-            const totalArea = residentialArea + hospitalityArea + retailArea;
-            
-            const baseConstructionCosts = devCosts
-                .filter(c => c.method !== 'percentage')
-                .map(cost => calculateTotalDevCost(cost, []));
-            
-            const totalDevCosts = devCosts.map(cost => 
-                calculateTotalDevCost(cost, baseConstructionCosts)
-            );
-            
-            const totalDevCost = totalDevCosts.reduce((sum, cost) => sum + cost, 0);
-            const totalProjectCost = totalDevCost + (landAcquisitionType === 'cash' ? landValue : 0);
 
             return (
                 <div className="min-h-screen pb-12">
@@ -240,7 +247,9 @@
                     <div className="gradient-bg text-white py-8 px-6 shadow-lg">
                         <div className="max-w-7xl mx-auto">
                             <h1 className="text-4xl font-bold mb-2">Real Estate Financial Modeling Platform</h1>
-                            <p className="text-blue-100 text-lg">Complete Feasibility Analysis with 5-Year Financial Statements</p>
+                            <p className="text-blue-100 text-lg">
+                                Complete Feasibility Analysis • {years} Year{years > 1 ? 's' : ''} • {totalPeriods} {periodLabel}s
+                            </p>
                         </div>
                     </div>
 
@@ -249,57 +258,51 @@
                         {activeModule === 'overview' && (
                             <div>
                                 <h2 className="text-3xl font-bold mb-8 text-gray-800">Select Module</h2>
-                                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                                    <div 
-                                        className="module-card p-6 cursor-pointer" 
-                                        onClick={() => {
-                                            setActiveModule('module1');
-                                            setActiveTab('timeline');
-                                        }}
-                                    >
+                                <div className="grid md:grid-cols-4 gap-6 mb-8">
+                                    <div className="module-card p-6 cursor-pointer" 
+                                         onClick={() => { setActiveModule('module1'); setActiveTab('timeline'); }}>
                                         <div className="text-4xl mb-4">🏗️</div>
                                         <h3 className="text-xl font-bold mb-2 text-gray-800">Module 1</h3>
                                         <p className="text-gray-600 mb-4">Development Plan</p>
                                         <p className="text-sm text-gray-500">Timeline, land, costs & financing</p>
                                     </div>
                                     
-                                    <div className="module-card p-6 cursor-pointer opacity-50">
+                                    <div className="module-card p-6 opacity-50">
                                         <div className="text-4xl mb-4">💰</div>
                                         <h3 className="text-xl font-bold mb-2 text-gray-800">Module 2</h3>
                                         <p className="text-gray-600 mb-4">Revenue & Operations</p>
-                                        <p className="text-sm text-gray-500">Coming soon...</p>
+                                        <p className="text-sm text-gray-500">Coming next...</p>
                                     </div>
                                     
-                                    <div className="module-card p-6 cursor-pointer opacity-50">
+                                    <div className="module-card p-6 opacity-50">
                                         <div className="text-4xl mb-4">📊</div>
                                         <h3 className="text-xl font-bold mb-2 text-gray-800">Module 3</h3>
                                         <p className="text-gray-600 mb-4">Valuation & Exit</p>
-                                        <p className="text-sm text-gray-500">Coming soon...</p>
+                                        <p className="text-sm text-gray-500">Coming next...</p>
                                     </div>
                                     
-                                    <div className="module-card p-6 cursor-pointer opacity-50">
+                                    <div className="module-card p-6 opacity-50">
                                         <div className="text-4xl mb-4">📈</div>
                                         <h3 className="text-xl font-bold mb-2 text-gray-800">Module 4</h3>
                                         <p className="text-gray-600 mb-4">Financial Statements</p>
-                                        <p className="text-sm text-gray-500">Coming soon...</p>
+                                        <p className="text-sm text-gray-500">Coming next...</p>
                                     </div>
                                 </div>
 
-                                {/* Project Summary */}
                                 <div className="module-card p-8">
                                     <h2 className="text-2xl font-bold mb-6 text-gray-800">Project Summary: {projectName}</h2>
                                     <div className="grid md:grid-cols-3 gap-6">
                                         <div>
-                                            <p className="text-sm text-gray-600 mb-1">Total Project Cost</p>
-                                            <p className="text-2xl font-bold text-gray-800">{formatCurrency(totalProjectCost)}</p>
+                                            <p className="text-sm text-gray-600 mb-1">Project Type</p>
+                                            <p className="text-2xl font-bold text-gray-800 capitalize">{projectType.replace('-', ' ')}</p>
                                         </div>
                                         <div>
-                                            <p className="text-sm text-gray-600 mb-1">Total Development Cost</p>
-                                            <p className="text-2xl font-bold text-green-600">{formatCurrency(totalDevCost)}</p>
+                                            <p className="text-sm text-gray-600 mb-1">Model Type</p>
+                                            <p className="text-2xl font-bold text-blue-600 capitalize">{modelType}</p>
                                         </div>
                                         <div>
-                                            <p className="text-sm text-gray-600 mb-1">Total Area</p>
-                                            <p className="text-2xl font-bold text-blue-600">{totalArea.toLocaleString()} sqm</p>
+                                            <p className="text-sm text-gray-600 mb-1">Total Land Area</p>
+                                            <p className="text-2xl font-bold text-green-600">{formatNumber(totalLandArea)} sqm</p>
                                         </div>
                                     </div>
                                 </div>
@@ -312,7 +315,7 @@
                                 <div className="flex items-center justify-between mb-6">
                                     <button 
                                         onClick={() => setActiveModule('overview')} 
-                                        className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2"
+                                        className="text-blue-600 hover:text-blue-800 font-medium"
                                     >
                                         ← Back to Overview
                                     </button>
@@ -331,7 +334,7 @@
                                                     activeTab === tab ? 'tab-active' : 'text-gray-600 hover:text-blue-600'
                                                 }`}
                                             >
-                                                {tab === 'timeline' && '📅 Timeline'}
+                                                {tab === 'timeline' && '📅 Project Details & Timeline'}
                                                 {tab === 'land' && '🏗️ Land & Area'}
                                                 {tab === 'costs' && '💰 Development Costs'}
                                                 {tab === 'financing' && '🏦 Financing'}
@@ -340,15 +343,14 @@
                                     </div>
                                 </div>
 
-                                {/* Tab Content */}
+                                {/* TIMELINE TAB */}
                                 {activeTab === 'timeline' && (
                                     <div className="module-card p-6">
-                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Project Timeline</h3>
-                                        <div className="grid md:grid-cols-2 gap-6">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Project Details and Timeline</h3>
+                                        
+                                        <div className="grid md:grid-cols-2 gap-6 mb-8">
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Project Name
-                                                </label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
                                                 <input
                                                     type="text"
                                                     value={projectName}
@@ -356,10 +358,37 @@
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                                                 />
                                             </div>
+                                            
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Project Start Date
-                                                </label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Project Type</label>
+                                                <select
+                                                    value={projectType}
+                                                    onChange={(e) => setProjectType(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                >
+                                                    <option value="residential">Residential</option>
+                                                    <option value="hospitality">Hospitality</option>
+                                                    <option value="mixed-use">Mixed-Use</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Model Type</label>
+                                                <select
+                                                    value={modelType}
+                                                    onChange={(e) => setModelType(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                >
+                                                    <option value="monthly">Monthly</option>
+                                                    <option value="annual">Annual</option>
+                                                </select>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Affects all schedules throughout the model
+                                                </p>
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Project Start Date</label>
                                                 <input
                                                     type="date"
                                                     value={projectStart}
@@ -367,88 +396,67 @@
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                                                 />
                                             </div>
+                                            
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Pre-Construction (months)
+                                                    Construction Period ({modelType === 'monthly' ? 'months' : 'years'})
                                                 </label>
                                                 <input
                                                     type="number"
-                                                    value={preConstructionMonths}
-                                                    onChange={(e) => setPreConstructionMonths(Number(e.target.value))}
+                                                    value={constructionPeriods}
+                                                    onChange={(e) => setConstructionPeriods(Number(e.target.value))}
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                    min="0"
+                                                    min="1"
                                                 />
                                             </div>
+                                            
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Construction Phase (months)
+                                                    Operations Period ({modelType === 'monthly' ? 'months' : 'years'})
                                                 </label>
                                                 <input
                                                     type="number"
-                                                    value={constructionMonths}
-                                                    onChange={(e) => setConstructionMonths(Number(e.target.value))}
+                                                    value={operationsPeriods}
+                                                    onChange={(e) => setOperationsPeriods(Number(e.target.value))}
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                    min="0"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Operations Phase (months)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    value={operationsMonths}
-                                                    onChange={(e) => setOperationsMonths(Number(e.target.value))}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                    min="0"
+                                                    min="1"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                                            <p className="text-sm text-blue-800">
-                                                <strong>Total Project Duration:</strong> {totalMonths} months 
-                                                ({(totalMonths / 12).toFixed(1)} years)
-                                            </p>
-                                            <p className="text-sm text-blue-800 mt-2">
-                                                <strong>Breakdown:</strong> Pre-construction: {preConstructionMonths}m | 
-                                                Construction: {constructionMonths}m | Operations: {operationsMonths}m
-                                            </p>
+                                        
+                                        <div className="p-4 bg-blue-50 rounded-lg">
+                                            <div className="grid md:grid-cols-3 gap-4">
+                                                <div>
+                                                    <p className="text-sm text-blue-800 font-semibold">Total Duration</p>
+                                                    <p className="text-lg font-bold text-blue-900">
+                                                        {totalPeriods} {periodLabel}s ({years} Years)
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-blue-800 font-semibold">Project End Date</p>
+                                                    <p className="text-lg font-bold text-blue-900">
+                                                        {calculateProjectEndDate()}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-blue-800 font-semibold">Breakdown</p>
+                                                    <p className="text-sm text-blue-900">
+                                                        Construction: {constructionPeriods} | Operations: {operationsPeriods}
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
 
+                                {/* LAND & AREA TAB */}
                                 {activeTab === 'land' && (
-                                    <div className="module-card p-6">
-                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Land & Area Assumptions</h3>
-                                        
-                                        <div className="mb-8">
-                                            <h4 className="text-lg font-semibold mb-4 text-gray-700">Land Acquisition</h4>
-                                            <div className="grid md:grid-cols-2 gap-6">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Acquisition Type
-                                                    </label>
-                                                    <select
-                                                        value={landAcquisitionType}
-                                                        onChange={(e) => setLandAcquisitionType(e.target.value)}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                    >
-                                                        <option value="cash">Cash Purchase</option>
-                                                        <option value="inkind">In-Kind Contribution</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Land Value ($)
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={landValue}
-                                                        onChange={(e) => setLandValue(Number(e.target.value))}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                        min="0"
-                                                    />
-                                                </div>
+                                    <div className="space-y-6">
+                                        {/* Land Acquisition */}
+                                        <div className="module-card p-6">
+                                            <h3 className="text-2xl font-bold mb-6 text-gray-800">Land Acquisition</h3>
+                                            
+                                            <div className="grid md:grid-cols-2 gap-6 mb-4">
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                                         Total Land Area (sqm)
@@ -461,311 +469,462 @@
                                                         min="0"
                                                     />
                                                 </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Land Value per SQM ($)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={landValuePerSqm}
+                                                        onChange={(e) => setLandValuePerSqm(Number(e.target.value))}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                        min="0"
+                                                    />
+                                                </div>
                                             </div>
+                                            
+                                            <div className="table-container">
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Acquisition Type</th>
+                                                            <th>%</th>
+                                                            <th>Area (sqm)</th>
+                                                            <th>Value ($)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Cash Purchase</td>
+                                                            <td>
+                                                                <input
+                                                                    type="number"
+                                                                    value={cashPercent}
+                                                                    onChange={(e) => setCashPercent(Number(e.target.value))}
+                                                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                                                                    min="0"
+                                                                    max="100"
+                                                                />
+                                                            </td>
+                                                            <td>{formatNumber(cashLandArea)}</td>
+                                                            <td>{formatCurrency(cashLandValue)}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>In-Kind Contribution</td>
+                                                            <td>
+                                                                <input
+                                                                    type="number"
+                                                                    value={inKindPercent}
+                                                                    onChange={(e) => setInKindPercent(Number(e.target.value))}
+                                                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                                                                    min="0"
+                                                                    max="100"
+                                                                />
+                                                            </td>
+                                                            <td>{formatNumber(inKindLandArea)}</td>
+                                                            <td>{formatCurrency(inKindLandValue)}</td>
+                                                        </tr>
+                                                        <tr className="total-row">
+                                                            <td>TOTAL</td>
+                                                            <td className={landPercentValid ? 'success' : 'warning'}>
+                                                                {cashPercent + inKindPercent}%
+                                                            </td>
+                                                            <td>{formatNumber(totalLandArea)}</td>
+                                                            <td>{formatCurrency(totalLandValue)}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            
+                                            {!landPercentValid && (
+                                                <p className="text-sm text-red-600 mt-2">
+                                                    ⚠️ Land percentages must total exactly 100%
+                                                </p>
+                                            )}
                                         </div>
 
-                                        <div className="mb-8">
-                                            <h4 className="text-lg font-semibold mb-4 text-gray-700">Building Areas</h4>
-                                            <div className="grid md:grid-cols-2 gap-6">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Gross Floor Area - GFA (sqm)
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={gfa}
-                                                        onChange={(e) => setGfa(Number(e.target.value))}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                        min="0"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Built-Up Area - BUA (sqm)
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={bua}
-                                                        onChange={(e) => setBua(Number(e.target.value))}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                        min="0"
-                                                    />
+                                        {/* Area Allocation */}
+                                        <div className="module-card p-6">
+                                            <h3 className="text-2xl font-bold mb-6 text-gray-800">Area Allocation by Asset Class</h3>
+                                            
+                                            <div className="table-container mb-6">
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Asset Class</th>
+                                                            <th>Allocation %</th>
+                                                            <th>Total Area (sqm)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Residential</td>
+                                                            <td>
+                                                                <input
+                                                                    type="number"
+                                                                    value={residentialPercent}
+                                                                    onChange={(e) => setResidentialPercent(Number(e.target.value))}
+                                                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                                                                    min="0"
+                                                                    max="100"
+                                                                />
+                                                            </td>
+                                                            <td>{formatNumber(residentialTotalArea)}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Hospitality</td>
+                                                            <td>
+                                                                <input
+                                                                    type="number"
+                                                                    value={hospitalityPercent}
+                                                                    onChange={(e) => setHospitalityPercent(Number(e.target.value))}
+                                                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                                                                    min="0"
+                                                                    max="100"
+                                                                />
+                                                            </td>
+                                                            <td>{formatNumber(hospitalityTotalArea)}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Retail</td>
+                                                            <td>
+                                                                <input
+                                                                    type="number"
+                                                                    value={retailPercent}
+                                                                    onChange={(e) => setRetailPercent(Number(e.target.value))}
+                                                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                                                                    min="0"
+                                                                    max="100"
+                                                                />
+                                                            </td>
+                                                            <td>{formatNumber(retailTotalArea)}</td>
+                                                        </tr>
+                                                        <tr className="total-row">
+                                                            <td>TOTAL</td>
+                                                            <td className={areaPercentValid ? 'success' : 'warning'}>
+                                                                {residentialPercent + hospitalityPercent + retailPercent}%
+                                                            </td>
+                                                            <td>{formatNumber(totalLandArea)}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            
+                                            {!areaPercentValid && (
+                                                <p className="text-sm text-red-600 mb-4">
+                                                    ⚠️ Area percentages must total exactly 100%
+                                                </p>
+                                            )}
+                                            
+                                            {/* Residential Breakdown */}
+                                            <div className="mb-6">
+                                                <h4 className="text-lg font-bold text-gray-700 mb-3">Residential - Area Breakdown</h4>
+                                                <div className="table-container">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Metric</th>
+                                                                <th>Value</th>
+                                                                <th>Calculation</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td>Total Allocated Area</td>
+                                                                <td>{formatNumber(residentialTotalArea)} sqm</td>
+                                                                <td>{residentialPercent}% of total land</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td>Roads/Open Area %</td>
+                                                                <td>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={residentialRoadsPercent}
+                                                                        onChange={(e) => setResidentialRoadsPercent(Number(e.target.value))}
+                                                                        className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                                                                        min="0"
+                                                                        max="100"
+                                                                    />
+                                                                </td>
+                                                                <td>User input</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td>Roads/Open Area</td>
+                                                                <td>{formatNumber(residentialRoadsArea)} sqm</td>
+                                                                <td>{residentialRoadsPercent}% of allocated area</td>
+                                                            </tr>
+                                                            <tr className="bg-green-50">
+                                                                <td><strong>Net Developable Area</strong></td>
+                                                                <td><strong>{formatNumber(residentialNetArea)} sqm</strong></td>
+                                                                <td>Total - Roads/Open</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="tooltip">
+                                                                    GFA (Gross Floor Area)
+                                                                    <span className="tooltiptext">
+                                                                        GFA = Net Area × FAR (Floor Area Ratio). 
+                                                                        Current FAR: {residentialFAR}
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    {formatNumber(residentialGFA)} sqm
+                                                                    <span className="text-xs text-gray-500 ml-2">
+                                                                        (FAR: 
+                                                                        <input
+                                                                            type="number"
+                                                                            value={residentialFAR}
+                                                                            onChange={(e) => setResidentialFAR(Number(e.target.value))}
+                                                                            className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center ml-1"
+                                                                            step="0.1"
+                                                                            min="0"
+                                                                        />)
+                                                                    </span>
+                                                                </td>
+                                                                <td>Net Area × FAR</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="tooltip">
+                                                                    BUA (Built-Up Area)
+                                                                    <span className="tooltiptext">
+                                                                        BUA = GFA × Efficiency Ratio. 
+                                                                        Current Efficiency: {(residentialEfficiency * 100).toFixed(0)}%
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    {formatNumber(residentialBUA)} sqm
+                                                                    <span className="text-xs text-gray-500 ml-2">
+                                                                        (Eff: 
+                                                                        <input
+                                                                            type="number"
+                                                                            value={(residentialEfficiency * 100).toFixed(0)}
+                                                                            onChange={(e) => setResidentialEfficiency(Number(e.target.value) / 100)}
+                                                                            className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center ml-1"
+                                                                            min="0"
+                                                                            max="100"
+                                                                        />%)
+                                                                    </span>
+                                                                </td>
+                                                                <td>GFA × Efficiency %</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div>
-                                            <h4 className="text-lg font-semibold mb-4 text-gray-700">Area Allocation by Asset</h4>
-                                            <div className="grid md:grid-cols-3 gap-6">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Residential (sqm)
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={residentialArea}
-                                                        onChange={(e) => setResidentialArea(Number(e.target.value))}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                        min="0"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Hospitality (sqm)
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={hospitalityArea}
-                                                        onChange={(e) => setHospitalityArea(Number(e.target.value))}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                        min="0"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Retail (sqm)
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={retailArea}
-                                                        onChange={(e) => setRetailArea(Number(e.target.value))}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                        min="0"
-                                                    />
+                                            
+                                            {/* Hospitality Breakdown */}
+                                            <div className="mb-6">
+                                                <h4 className="text-lg font-bold text-gray-700 mb-3">Hospitality - Area Breakdown</h4>
+                                                <div className="table-container">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Metric</th>
+                                                                <th>Value</th>
+                                                                <th>Calculation</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td>Total Allocated Area</td>
+                                                                <td>{formatNumber(hospitalityTotalArea)} sqm</td>
+                                                                <td>{hospitalityPercent}% of total land</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td>Roads/Open Area %</td>
+                                                                <td>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={hospitalityRoadsPercent}
+                                                                        onChange={(e) => setHospitalityRoadsPercent(Number(e.target.value))}
+                                                                        className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                                                                        min="0"
+                                                                        max="100"
+                                                                    />
+                                                                </td>
+                                                                <td>User input</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td>Roads/Open Area</td>
+                                                                <td>{formatNumber(hospitalityRoadsArea)} sqm</td>
+                                                                <td>{hospitalityRoadsPercent}% of allocated area</td>
+                                                            </tr>
+                                                            <tr className="bg-green-50">
+                                                                <td><strong>Net Developable Area</strong></td>
+                                                                <td><strong>{formatNumber(hospitalityNetArea)} sqm</strong></td>
+                                                                <td>Total - Roads/Open</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="tooltip">
+                                                                    GFA (Gross Floor Area)
+                                                                    <span className="tooltiptext">
+                                                                        GFA = Net Area × FAR. Current FAR: {hospitalityFAR}
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    {formatNumber(hospitalityGFA)} sqm
+                                                                    <span className="text-xs text-gray-500 ml-2">
+                                                                        (FAR: 
+                                                                        <input
+                                                                            type="number"
+                                                                            value={hospitalityFAR}
+                                                                            onChange={(e) => setHospitalityFAR(Number(e.target.value))}
+                                                                            className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center ml-1"
+                                                                            step="0.1"
+                                                                            min="0"
+                                                                        />)
+                                                                    </span>
+                                                                </td>
+                                                                <td>Net Area × FAR</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="tooltip">
+                                                                    BUA (Built-Up Area)
+                                                                    <span className="tooltiptext">
+                                                                        BUA = GFA × Efficiency. Current: {(hospitalityEfficiency * 100).toFixed(0)}%
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    {formatNumber(hospitalityBUA)} sqm
+                                                                    <span className="text-xs text-gray-500 ml-2">
+                                                                        (Eff: 
+                                                                        <input
+                                                                            type="number"
+                                                                            value={(hospitalityEfficiency * 100).toFixed(0)}
+                                                                            onChange={(e) => setHospitalityEfficiency(Number(e.target.value) / 100)}
+                                                                            className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center ml-1"
+                                                                            min="0"
+                                                                            max="100"
+                                                                        />%)
+                                                                    </span>
+                                                                </td>
+                                                                <td>GFA × Efficiency %</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
                                                 </div>
                                             </div>
-                                            <div className="mt-4 p-4 bg-green-50 rounded-lg">
-                                                <p className="text-sm text-green-800">
-                                                    <strong>Total Allocated Area:</strong> {totalArea.toLocaleString()} sqm
-                                                </p>
-                                                <p className="text-sm text-green-800 mt-1">
-                                                    <strong>Breakdown:</strong> Residential: {((residentialArea/totalArea)*100).toFixed(1)}% | 
-                                                    Hospitality: {((hospitalityArea/totalArea)*100).toFixed(1)}% | 
-                                                    Retail: {((retailArea/totalArea)*100).toFixed(1)}%
-                                                </p>
+                                            
+                                            {/* Retail Breakdown */}
+                                            <div>
+                                                <h4 className="text-lg font-bold text-gray-700 mb-3">Retail - Area Breakdown</h4>
+                                                <div className="table-container">
+                                                    <table>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Metric</th>
+                                                                <th>Value</th>
+                                                                <th>Calculation</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td>Total Allocated Area</td>
+                                                                <td>{formatNumber(retailTotalArea)} sqm</td>
+                                                                <td>{retailPercent}% of total land</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td>Roads/Open Area %</td>
+                                                                <td>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={retailRoadsPercent}
+                                                                        onChange={(e) => setRetailRoadsPercent(Number(e.target.value))}
+                                                                        className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                                                                        min="0"
+                                                                        max="100"
+                                                                    />
+                                                                </td>
+                                                                <td>User input</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td>Roads/Open Area</td>
+                                                                <td>{formatNumber(retailRoadsArea)} sqm</td>
+                                                                <td>{retailRoadsPercent}% of allocated area</td>
+                                                            </tr>
+                                                            <tr className="bg-green-50">
+                                                                <td><strong>Net Developable Area</strong></td>
+                                                                <td><strong>{formatNumber(retailNetArea)} sqm</strong></td>
+                                                                <td>Total - Roads/Open</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="tooltip">
+                                                                    GFA (Gross Floor Area)
+                                                                    <span className="tooltiptext">
+                                                                        GFA = Net Area × FAR. Current FAR: {retailFAR}
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    {formatNumber(retailGFA)} sqm
+                                                                    <span className="text-xs text-gray-500 ml-2">
+                                                                        (FAR: 
+                                                                        <input
+                                                                            type="number"
+                                                                            value={retailFAR}
+                                                                            onChange={(e) => setRetailFAR(Number(e.target.value))}
+                                                                            className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center ml-1"
+                                                                            step="0.1"
+                                                                            min="0"
+                                                                        />)
+                                                                    </span>
+                                                                </td>
+                                                                <td>Net Area × FAR</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="tooltip">
+                                                                    BUA (Built-Up Area)
+                                                                    <span className="tooltiptext">
+                                                                        BUA = GFA × Efficiency. Current: {(retailEfficiency * 100).toFixed(0)}%
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    {formatNumber(retailBUA)} sqm
+                                                                    <span className="text-xs text-gray-500 ml-2">
+                                                                        (Eff: 
+                                                                        <input
+                                                                            type="number"
+                                                                            value={(retailEfficiency * 100).toFixed(0)}
+                                                                            onChange={(e) => setRetailEfficiency(Number(e.target.value) / 100)}
+                                                                            className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center ml-1"
+                                                                            min="0"
+                                                                            max="100"
+                                                                        />%)
+                                                                    </span>
+                                                                </td>
+                                                                <td>GFA × Efficiency %</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
+                                {/* COSTS TAB - Placeholder for now */}
                                 {activeTab === 'costs' && (
                                     <div className="module-card p-6">
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h3 className="text-2xl font-bold text-gray-800">Development Costs with Phasing</h3>
-                                            <button onClick={addCost} className="btn-primary text-white px-4 py-2 rounded-lg">
-                                                + Add Cost Item
-                                            </button>
-                                        </div>
-
-                                        <div className="mb-4 p-4 bg-blue-50 rounded-lg text-sm text-blue-800">
-                                            <strong>Phasing Guide:</strong> Enter comma-separated percentages (e.g., "30,25,20,15,10") or "even" for equal distribution.
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            {devCosts.map(cost => {
-                                                const baseCosts = devCosts
-                                                    .filter(c => c.method !== 'percentage')
-                                                    .map(c => calculateTotalDevCost(c, []));
-                                                const costTotal = calculateTotalDevCost(cost, baseCosts);
-                                                
-                                                return (
-                                                    <div key={cost.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                                                        <div className="grid md:grid-cols-4 gap-4 mb-3">
-                                                            <div>
-                                                                <label className="block text-xs font-medium text-gray-700 mb-1">Cost Item Name</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={cost.name}
-                                                                    onChange={(e) => updateCost(cost.id, 'name', e.target.value)}
-                                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                                                                />
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-xs font-medium text-gray-700 mb-1">Method</label>
-                                                                <select
-                                                                    value={cost.method}
-                                                                    onChange={(e) => updateCost(cost.id, 'method', e.target.value)}
-                                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                                                                >
-                                                                    <option value="fixed">Fixed Amount</option>
-                                                                    <option value="sqm">Rate per SQM</option>
-                                                                    <option value="percentage">% of Base Costs</option>
-                                                                </select>
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-xs font-medium text-gray-700 mb-1">Value</label>
-                                                                {cost.method === 'fixed' && (
-                                                                    <input type="number" value={cost.amount} 
-                                                                        onChange={(e) => updateCost(cost.id, 'amount', Number(e.target.value))}
-                                                                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm" 
-                                                                        placeholder="Amount ($)" />
-                                                                )}
-                                                                {cost.method === 'sqm' && (
-                                                                    <input type="number" value={cost.rate}
-                                                                        onChange={(e) => updateCost(cost.id, 'rate', Number(e.target.value))}
-                                                                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm" 
-                                                                        placeholder="$/sqm" />
-                                                                )}
-                                                                {cost.method === 'percentage' && (
-                                                                    <input type="number" value={cost.percentage}
-                                                                        onChange={(e) => updateCost(cost.id, 'percentage', Number(e.target.value))}
-                                                                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm" 
-                                                                        placeholder="%" />
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-end">
-                                                                <button onClick={() => deleteCost(cost.id)}
-                                                                    className="w-full px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700">
-                                                                    🗑️ Delete
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                        <div className="grid md:grid-cols-3 gap-4">
-                                                            <div>
-                                                                <label className="block text-xs font-medium text-gray-700 mb-1">Start Month</label>
-                                                                <input type="number" value={cost.startMonth}
-                                                                    onChange={(e) => updateCost(cost.id, 'startMonth', Number(e.target.value))}
-                                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm" min="1" />
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-xs font-medium text-gray-700 mb-1">End Month</label>
-                                                                <input type="number" value={cost.endMonth}
-                                                                    onChange={(e) => updateCost(cost.id, 'endMonth', Number(e.target.value))}
-                                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm" min="1" />
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                                    Total Cost
-                                                                </label>
-                                                                <input type="text" value={formatCurrency(costTotal)} readOnly
-                                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm bg-gray-100 font-semibold" />
-                                                            </div>
-                                                        </div>
-                                                        <div className="mt-3">
-                                                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                                                                Phasing (% per month or "even")
-                                                            </label>
-                                                            <input
-                                                                type="text"
-                                                                value={cost.phasing}
-                                                                onChange={(e) => updateCost(cost.id, 'phasing', e.target.value)}
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                                                                placeholder="e.g., 30,25,20,15,10 or even"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-
-                                        <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                                            <p className="text-sm text-green-800">
-                                                <strong>Total Development Cost:</strong> {formatCurrency(totalDevCost)}
-                                            </p>
-                                            <p className="text-sm text-green-800 mt-1">
-                                                <strong>Total Project Cost (with land):</strong> {formatCurrency(totalProjectCost)}
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Development Costs</h3>
+                                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
+                                            <p className="text-sm text-blue-800">
+                                                <strong>📝 Development Costs Tab</strong><br/>
+                                                This section will include 3 separate cost sections (Residential, Hospitality, Retail) 
+                                                with phasing tables and CAPEX summaries. Full implementation coming next.
                                             </p>
                                         </div>
                                     </div>
                                 )}
 
+                                {/* FINANCING TAB - Placeholder for now */}
                                 {activeTab === 'financing' && (
-                                    <div className="space-y-6">
-                                        <div className="module-card p-6">
-                                            <h3 className="text-2xl font-bold mb-6 text-gray-800">Capital Structure</h3>
-                                            <div className="grid md:grid-cols-2 gap-6">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Debt Percentage (%)</label>
-                                                    <input
-                                                        type="number"
-                                                        value={debtPercentage}
-                                                        onChange={(e) => setDebtPercentage(Number(e.target.value))}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                        min="0" max="100" step="0.1"
-                                                    />
-                                                    <p className="text-sm text-gray-500 mt-1">Equity: {(100 - debtPercentage).toFixed(1)}%</p>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Interest Rate (% p.a.)</label>
-                                                    <input
-                                                        type="number"
-                                                        value={interestRate}
-                                                        onChange={(e) => setInterestRate(Number(e.target.value))}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                        min="0" step="0.1"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Debt Drawdown Start Month</label>
-                                                    <input
-                                                        type="number"
-                                                        value={debtDrawdownStart}
-                                                        onChange={(e) => setDebtDrawdownStart(Number(e.target.value))}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                        min="1"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="flex items-center space-x-2 mt-8">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={interestCapitalized}
-                                                            onChange={(e) => setInterestCapitalized(e.target.checked)}
-                                                            className="w-4 h-4 text-blue-600"
-                                                        />
-                                                        <span className="text-sm font-medium text-gray-700">Capitalize Interest During Construction</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                                                <p className="text-sm text-blue-800">
-                                                    <strong>Total Debt:</strong> {formatCurrency(totalProjectCost * (debtPercentage/100))}
-                                                </p>
-                                                <p className="text-sm text-blue-800 mt-1">
-                                                    <strong>Total Equity:</strong> {formatCurrency(totalProjectCost * ((100-debtPercentage)/100))}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="module-card p-6">
-                                            <div className="flex justify-between items-center mb-6">
-                                                <h3 className="text-2xl font-bold text-gray-800">Equity Investors</h3>
-                                                <button onClick={addInvestor} className="btn-primary text-white px-4 py-2 rounded-lg">
-                                                    + Add Investor
-                                                </button>
-                                            </div>
-                                            <div className="space-y-4">
-                                                {investors.map(inv => (
-                                                    <div key={inv.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                                                        <input
-                                                            type="text"
-                                                            value={inv.name}
-                                                            onChange={(e) => updateInvestor(inv.id, 'name', e.target.value)}
-                                                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
-                                                            placeholder="Investor Name"
-                                                        />
-                                                        <input
-                                                            type="number"
-                                                            value={inv.equityPercentage}
-                                                            onChange={(e) => updateInvestor(inv.id, 'equityPercentage', Number(e.target.value))}
-                                                            className="w-32 px-4 py-2 border border-gray-300 rounded-lg"
-                                                            placeholder="%" min="0" max="100" step="0.1"
-                                                        />
-                                                        <span className="text-gray-600">%</span>
-                                                        <button onClick={() => deleteInvestor(inv.id)}
-                                                            className="text-red-600 hover:text-red-800">🗑️</button>
-                                                    </div>
-                                                ))}
-                                                <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
-                                                    <p className="text-sm text-yellow-800">
-                                                        <strong>Total Equity Allocation:</strong> {investors.reduce((sum, inv) => sum + inv.equityPercentage, 0).toFixed(1)}%
-                                                        {investors.reduce((sum, inv) => sum + inv.equityPercentage, 0) !== 100 && 
-                                                            <span className="ml-2 text-red-600">⚠️ Should total 100%</span>
-                                                        }
-                                                    </p>
-                                                </div>
-                                            </div>
+                                    <div className="module-card p-6">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Financing Structure</h3>
+                                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
+                                            <p className="text-sm text-blue-800">
+                                                <strong>📝 Financing Tab</strong><br/>
+                                                This section will include debt repayment terms, capital structure, 
+                                                finance cost capitalization, drawdown schedules, and debt balance schedules. 
+                                                Full implementation coming next.
+                                            </p>
                                         </div>
                                     </div>
                                 )}
