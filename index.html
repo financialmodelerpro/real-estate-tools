@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Estate Financial Modeling Platform</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Real Estate Financial Modeling Platform v1.1</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -121,6 +124,1277 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
+
+        // Development Costs Section Component
+        function DevelopmentCostsSection({ assetType, totalArea, netArea, gfa, bua, landCashPortion, constructionPeriods, modelType }) {
+            const [costItems, setCostItems] = useState([
+                {
+                    id: 1,
+                    name: 'Land (Cash Portion)',
+                    method: 'fixed',
+                    value: landCashPortion,
+                    baseType: '',
+                    phasing: [100],
+                    startPeriod: 0,
+                    endPeriod: 0,
+                    isLocked: true
+                },
+                {
+                    id: 2,
+                    name: 'Infrastructure Development',
+                    method: 'sqm_net',
+                    value: 500,
+                    baseType: '',
+                    phasing: [30, 40, 30],
+                    startPeriod: 1,
+                    endPeriod: 3,
+                    isLocked: false
+                },
+                {
+                    id: 3,
+                    name: 'Construction Cost',
+                    method: 'sqm_bua',
+                    value: 1500,
+                    baseType: '',
+                    phasing: [10, 20, 25, 25, 15, 5],
+                    startPeriod: 3,
+                    endPeriod: 8,
+                    isLocked: false
+                },
+                {
+                    id: 4,
+                    name: 'Professional Fees',
+                    method: 'percent',
+                    value: 8,
+                    baseType: 'construction',
+                    phasing: 'even',
+                    startPeriod: 1,
+                    endPeriod: 8,
+                    isLocked: false
+                },
+                {
+                    id: 5,
+                    name: 'Contingency',
+                    method: 'percent',
+                    value: 5,
+                    baseType: 'all',
+                    phasing: 'even',
+                    startPeriod: 1,
+                    endPeriod: constructionPeriods - 1,
+                    isLocked: false
+                },
+                {
+                    id: 6,
+                    name: 'Developer Fee',
+                    method: 'percent',
+                    value: 3,
+                    baseType: 'all',
+                    phasing: 'even',
+                    startPeriod: 0,
+                    endPeriod: constructionPeriods - 1,
+                    isLocked: false
+                },
+                {
+                    id: 7,
+                    name: 'Government & Statutory',
+                    method: 'fixed',
+                    value: 500000,
+                    baseType: '',
+                    phasing: [50, 50],
+                    startPeriod: 0,
+                    endPeriod: 1,
+                    isLocked: false
+                },
+                {
+                    id: 8,
+                    name: 'Finance Cost (Capitalized)',
+                    method: 'percent',
+                    value: 0,
+                    baseType: 'all',
+                    phasing: 'even',
+                    startPeriod: 0,
+                    endPeriod: constructionPeriods - 1,
+                    isLocked: false
+                }
+            ]);
+
+            const [nextId, setNextId] = useState(9);
+
+            // Calculate total cost for an item
+            const calculateItemTotal = (item) => {
+                switch (item.method) {
+                    case 'fixed':
+                        return item.value;
+                    case 'sqm_total':
+                        return item.value * totalArea;
+                    case 'sqm_net':
+                        return item.value * netArea;
+                    case 'sqm_gfa':
+                        return item.value * gfa;
+                    case 'sqm_bua':
+                        return item.value * bua;
+                    case 'percent':
+                        return calculatePercentBase(item);
+                    default:
+                        return 0;
+                }
+            };
+
+            // Calculate base for percentage items
+            const calculatePercentBase = (item) => {
+                let base = 0;
+                const otherItems = costItems.filter(ci => ci.id !== item.id && ci.name !== 'Finance Cost (Capitalized)');
+                
+                switch (item.baseType) {
+                    case 'land':
+                        const landItem = costItems.find(ci => ci.name === 'Land (Cash Portion)');
+                        base = landItem ? calculateItemTotal(landItem) : 0;
+                        break;
+                    case 'construction':
+                        const constructionItem = costItems.find(ci => ci.name === 'Construction Cost');
+                        base = constructionItem ? calculateItemTotal(constructionItem) : 0;
+                        break;
+                    case 'infra':
+                        const infraItem = costItems.find(ci => ci.name === 'Infrastructure Development');
+                        base = infraItem ? calculateItemTotal(infraItem) : 0;
+                        break;
+                    case 'all':
+                        base = otherItems.reduce((sum, ci) => sum + calculateItemTotal(ci), 0);
+                        break;
+                    default:
+                        base = 0;
+                }
+                return base * (item.value / 100);
+            };
+
+            // Parse phasing - now handles both array and string formats
+            const parsePhasing = (phasing, startPeriod, endPeriod) => {
+                const periodCount = endPeriod - startPeriod + 1;
+                
+                // If it's already an array, return it
+                if (Array.isArray(phasing)) {
+                    return phasing.length === periodCount ? phasing : Array(periodCount).fill(100 / periodCount);
+                }
+                
+                // Handle "even" keyword
+                if (typeof phasing === 'string' && phasing.toLowerCase() === 'even') {
+                    const percent = 100 / periodCount;
+                    return Array(periodCount).fill(percent);
+                }
+                
+                // Handle comma-separated string (backward compatibility)
+                if (typeof phasing === 'string') {
+                    const percentages = phasing.split(',').map(p => parseFloat(p.trim())).filter(p => !isNaN(p));
+                    if (percentages.length === periodCount) {
+                        return percentages;
+                    }
+                }
+                
+                // Default to even distribution
+                return Array(periodCount).fill(100 / periodCount);
+            };
+
+            // Calculate phased amounts for an item
+            const calculatePhasedAmounts = (item) => {
+                const total = calculateItemTotal(item);
+                const phasing = parsePhasing(item.phasing, item.startPeriod, item.endPeriod);
+                const amounts = Array(constructionPeriods).fill(0);
+                
+                phasing.forEach((percent, idx) => {
+                    const period = item.startPeriod + idx;
+                    if (period < constructionPeriods) {
+                        amounts[period] = (total * percent) / 100;
+                    }
+                });
+                
+                return amounts;
+            };
+
+            // Validate phasing
+            const validatePhasing = (phasing, startPeriod, endPeriod) => {
+                const periodCount = endPeriod - startPeriod + 1;
+                
+                // Handle array format
+                if (Array.isArray(phasing)) {
+                    if (phasing.length !== periodCount) {
+                        return { valid: false, message: `Need ${periodCount} periods` };
+                    }
+                    const sum = phasing.reduce((a, b) => a + b, 0);
+                    if (Math.abs(sum - 100) > 0.01) {
+                        return { valid: false, message: `Sum is ${sum.toFixed(1)}%, not 100%`, sum: sum };
+                    }
+                    return { valid: true, message: '', sum: sum };
+                }
+                
+                // Handle "even" keyword
+                if (typeof phasing === 'string' && phasing.toLowerCase() === 'even') {
+                    return { valid: true, message: '', sum: 100 };
+                }
+                
+                // Handle comma-separated string
+                if (typeof phasing === 'string') {
+                    const percentages = phasing.split(',').map(p => parseFloat(p.trim())).filter(p => !isNaN(p));
+                    
+                    if (percentages.length !== periodCount) {
+                        return { valid: false, message: `Need ${periodCount} values`, sum: 0 };
+                    }
+                    
+                    const sum = percentages.reduce((a, b) => a + b, 0);
+                    if (Math.abs(sum - 100) > 0.01) {
+                        return { valid: false, message: `Sum is ${sum.toFixed(1)}%, not 100%`, sum: sum };
+                    }
+                    
+                    return { valid: true, message: '', sum: sum };
+                }
+                
+                return { valid: false, message: 'Invalid format', sum: 0 };
+            };
+
+            // Calculate CAPEX table
+            const capexTable = useMemo(() => {
+                return costItems.map(item => ({
+                    name: item.name,
+                    amounts: calculatePhasedAmounts(item),
+                    total: calculateItemTotal(item)
+                }));
+            }, [costItems, totalArea, netArea, gfa, bua]);
+
+            // Calculate column totals
+            const columnTotals = useMemo(() => {
+                const totals = Array(constructionPeriods).fill(0);
+                capexTable.forEach(row => {
+                    row.amounts.forEach((amount, idx) => {
+                        totals[idx] += amount;
+                    });
+                });
+                return totals;
+            }, [capexTable]);
+
+            // Add new cost item
+            const addCostItem = () => {
+                const newItem = {
+                    id: nextId,
+                    name: 'New Cost Item',
+                    method: 'fixed',
+                    value: 0,
+                    baseType: '',
+                    phasing: 'even',
+                    startPeriod: 0,
+                    endPeriod: Math.min(5, constructionPeriods - 1),
+                    isLocked: false
+                };
+                setCostItems([...costItems, newItem]);
+                setNextId(nextId + 1);
+            };
+
+            // Delete cost item
+            const deleteCostItem = (id) => {
+                setCostItems(costItems.filter(item => item.id !== id));
+            };
+
+            // Update cost item
+            const updateCostItem = (id, field, value) => {
+                setCostItems(costItems.map(item => {
+                    if (item.id === id) {
+                        // When start or end period changes, reset phasing to even
+                        if (field === 'startPeriod' || field === 'endPeriod') {
+                            const newItem = { ...item, [field]: value };
+                            const periodCount = newItem.endPeriod - newItem.startPeriod + 1;
+                            return { ...newItem, phasing: 'even' };
+                        }
+                        return { ...item, [field]: value };
+                    }
+                    return item;
+                }));
+            };
+
+            // Update individual period percentage
+            const updatePeriodPercent = (itemId, periodIndex, value) => {
+                setCostItems(costItems.map(item => {
+                    if (item.id === itemId) {
+                        const phasing = Array.isArray(item.phasing) 
+                            ? [...item.phasing] 
+                            : parsePhasing(item.phasing, item.startPeriod, item.endPeriod);
+                        
+                        phasing[periodIndex] = parseFloat(value) || 0;
+                        return { ...item, phasing };
+                    }
+                    return item;
+                }));
+            };
+
+            // Set phasing to even distribution
+            const setEvenDistribution = (itemId) => {
+                setCostItems(costItems.map(item => {
+                    if (item.id === itemId) {
+                        return { ...item, phasing: 'even' };
+                    }
+                    return item;
+                }));
+            };
+
+            // Format number
+            const formatNumber = (num) => {
+                if (num === 0) return '0';
+                if (Math.abs(num) >= 1000000) {
+                    return (num / 1000000).toFixed(2) + 'M';
+                }
+                if (Math.abs(num) >= 1000) {
+                    return (num / 1000).toFixed(0) + 'K';
+                }
+                return num.toFixed(0);
+            };
+
+            // Update land cost when prop changes
+            useEffect(() => {
+                setCostItems(items => items.map(item => 
+                    item.name === 'Land (Cash Portion)' 
+                        ? { ...item, value: landCashPortion }
+                        : item
+                ));
+            }, [landCashPortion]);
+
+            const periodLabel = modelType === 'monthly' ? 'Month' : 'Year';
+
+            return (
+                <div className="module-card p-6 mb-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-2xl font-bold text-gray-800">{assetType} - Development Costs</h3>
+                        <button
+                            onClick={addCostItem}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium"
+                        >
+                            + Add Cost Item
+                        </button>
+                    </div>
+
+                    {/* Area Summary */}
+                    <div className="bg-gray-50 p-4 rounded-lg mb-6 grid grid-cols-5 gap-4 text-sm">
+                        <div>
+                            <div className="text-gray-600">Total Area</div>
+                            <div className="font-bold text-gray-900">{formatNumber(totalArea)} sqm</div>
+                        </div>
+                        <div>
+                            <div className="text-gray-600">Net Area</div>
+                            <div className="font-bold text-gray-900">{formatNumber(netArea)} sqm</div>
+                        </div>
+                        <div>
+                            <div className="text-gray-600">GFA</div>
+                            <div className="font-bold text-gray-900">{formatNumber(gfa)} sqm</div>
+                        </div>
+                        <div>
+                            <div className="text-gray-600">BUA</div>
+                            <div className="font-bold text-gray-900">{formatNumber(bua)} sqm</div>
+                        </div>
+                        <div>
+                            <div className="text-gray-600">Land (Cash)</div>
+                            <div className="font-bold text-gray-900">${formatNumber(landCashPortion)}</div>
+                        </div>
+                    </div>
+
+                    {/* Cost Items Configuration */}
+                    <div className="mb-8">
+                        {costItems.map((item, itemIdx) => {
+                            const validation = validatePhasing(item.phasing, item.startPeriod, item.endPeriod);
+                            const phasingArray = parsePhasing(item.phasing, item.startPeriod, item.endPeriod);
+                            const periodCount = item.endPeriod - item.startPeriod + 1;
+                            const totalCost = calculateItemTotal(item);
+                            
+                            return (
+                                <div key={item.id} className="mb-6 border border-gray-300 rounded-lg p-4 bg-white">
+                                    {/* Cost Item Header */}
+                                    <div className="grid grid-cols-12 gap-3 mb-3 pb-3 border-b border-gray-200">
+                                        <div className="col-span-3">
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Cost Item Name</label>
+                                            {item.isLocked ? (
+                                                <div className="font-semibold text-gray-800">{item.name}</div>
+                                            ) : (
+                                                <input
+                                                    type="text"
+                                                    value={item.name}
+                                                    onChange={(e) => updateCostItem(item.id, 'name', e.target.value)}
+                                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                                                />
+                                            )}
+                                        </div>
+                                        
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Calculation Method</label>
+                                            <select
+                                                value={item.method}
+                                                onChange={(e) => updateCostItem(item.id, 'method', e.target.value)}
+                                                disabled={item.isLocked}
+                                                className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs"
+                                            >
+                                                <option value="fixed">Fixed Amount</option>
+                                                <option value="sqm_total">Rate/sqm - Total Area</option>
+                                                <option value="sqm_net">Rate/sqm - Net Area</option>
+                                                <option value="sqm_gfa">Rate/sqm - GFA</option>
+                                                <option value="sqm_bua">Rate/sqm - BUA</option>
+                                                <option value="percent">% of Base Cost</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                {item.method === 'percent' ? 'Percentage (%)' : 'Value/Rate'}
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={item.value}
+                                                onChange={(e) => updateCostItem(item.id, 'value', parseFloat(e.target.value) || 0)}
+                                                disabled={item.isLocked}
+                                                className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right"
+                                                step={item.method === 'percent' ? '0.1' : '1'}
+                                            />
+                                        </div>
+                                        
+                                        {item.method === 'percent' && (
+                                            <div className="col-span-2">
+                                                <label className="block text-xs font-medium text-gray-600 mb-1">Base Cost Type</label>
+                                                <select
+                                                    value={item.baseType}
+                                                    onChange={(e) => updateCostItem(item.id, 'baseType', e.target.value)}
+                                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs"
+                                                >
+                                                    <option value="land">Land Cash Only</option>
+                                                    <option value="construction">Construction Cost</option>
+                                                    <option value="infra">Infrastructure</option>
+                                                    <option value="all">All Other Costs</option>
+                                                </select>
+                                            </div>
+                                        )}
+                                        
+                                        <div className={`${item.method === 'percent' ? 'col-span-2' : 'col-span-4'}`}>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Total Cost</label>
+                                            <div className="font-bold text-lg text-blue-600">${formatNumber(totalCost)}</div>
+                                        </div>
+                                        
+                                        <div className="col-span-1 flex items-end justify-end">
+                                            {!item.isLocked && (
+                                                <button
+                                                    onClick={() => deleteCostItem(item.id)}
+                                                    className="px-3 py-1.5 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Period Configuration */}
+                                    <div className="grid grid-cols-12 gap-3 mb-3">
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Start Period</label>
+                                            <input
+                                                type="number"
+                                                value={item.startPeriod}
+                                                onChange={(e) => updateCostItem(item.id, 'startPeriod', parseInt(e.target.value) || 0)}
+                                                className="w-full px-2 py-1.5 border border-gray-300 rounded text-center"
+                                                min="0"
+                                                max={constructionPeriods - 1}
+                                            />
+                                        </div>
+                                        
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">End Period</label>
+                                            <input
+                                                type="number"
+                                                value={item.endPeriod}
+                                                onChange={(e) => updateCostItem(item.id, 'endPeriod', parseInt(e.target.value) || 0)}
+                                                className="w-full px-2 py-1.5 border border-gray-300 rounded text-center"
+                                                min={item.startPeriod}
+                                                max={constructionPeriods - 1}
+                                            />
+                                        </div>
+                                        
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">Periods Count</label>
+                                            <div className="px-2 py-1.5 bg-gray-100 border border-gray-300 rounded text-center font-medium">
+                                                {periodCount}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="col-span-3">
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                Total % 
+                                                <span className={`ml-2 font-bold ${validation.valid ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {validation.sum ? validation.sum.toFixed(1) : '0.0'}%
+                                                </span>
+                                            </label>
+                                            <button
+                                                onClick={() => setEvenDistribution(item.id)}
+                                                className="w-full px-2 py-1.5 bg-purple-600 text-white rounded text-xs hover:bg-purple-700"
+                                            >
+                                                Set Even Distribution
+                                            </button>
+                                        </div>
+                                        
+                                        <div className="col-span-3">
+                                            {!validation.valid && (
+                                                <div className="mt-5 text-xs text-red-600 font-medium bg-red-50 px-2 py-1 rounded">
+                                                    ⚠️ {validation.message}
+                                                </div>
+                                            )}
+                                            {validation.valid && validation.sum === 100 && (
+                                                <div className="mt-5 text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">
+                                                    ✓ Valid (100%)
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Period-by-Period % Distribution */}
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-2">
+                                            Disbursement Schedule - % per {periodLabel}
+                                        </label>
+                                        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(80px, 1fr))` }}>
+                                            {phasingArray.map((percent, idx) => {
+                                                const actualPeriod = item.startPeriod + idx;
+                                                return (
+                                                    <div key={idx} className="flex flex-col">
+                                                        <label className="text-xs text-gray-500 mb-1 text-center">
+                                                            {periodLabel} {actualPeriod}
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            value={percent.toFixed(2)}
+                                                            onChange={(e) => updatePeriodPercent(item.id, idx, e.target.value)}
+                                                            className="px-2 py-1.5 border border-gray-300 rounded text-center text-sm"
+                                                            step="0.1"
+                                                            min="0"
+                                                            max="100"
+                                                        />
+                                                        <div className="text-xs text-gray-500 mt-0.5 text-center">
+                                                            ${formatNumber((totalCost * percent) / 100)}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        
+                        {/* Total Summary Row */}
+                        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-lg">
+                            <div className="flex justify-between items-center">
+                                <span className="text-lg font-bold">TOTAL CAPEX FOR {assetType.toUpperCase()}</span>
+                                <span className="text-2xl font-bold">
+                                    ${formatNumber(capexTable.reduce((sum, row) => sum + row.total, 0))}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* CAPEX Summary Table */}
+                    <div>
+                        <h4 className="text-lg font-bold text-gray-700 mb-3">CAPEX Summary by Period</h4>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                                <thead>
+                                    <tr className="bg-gray-800 text-white">
+                                        <th className="p-2 text-left sticky left-0 bg-gray-800 z-10">Cost Item</th>
+                                        {Array.from({ length: constructionPeriods }, (_, i) => (
+                                            <th key={i} className="p-2 text-center">{periodLabel} {i}</th>
+                                        ))}
+                                        <th className="p-2 text-center bg-gray-900">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {capexTable.map((row, idx) => (
+                                        <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                            <td className="p-2 border font-medium sticky left-0 bg-inherit z-10">{row.name}</td>
+                                            {row.amounts.map((amount, i) => (
+                                                <td key={i} className="p-2 border text-right">
+                                                    {amount > 0 ? `$${formatNumber(amount)}` : '-'}
+                                                </td>
+                                            ))}
+                                            <td className="p-2 border text-right font-semibold bg-gray-100">
+                                                ${formatNumber(row.total)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    <tr className="bg-blue-600 text-white font-bold">
+                                        <td className="p-3 sticky left-0 bg-blue-600 z-10">TOTAL</td>
+                                        {columnTotals.map((total, i) => (
+                                            <td key={i} className="p-3 text-right">
+                                                {total > 0 ? `$${formatNumber(total)}` : '-'}
+                                            </td>
+                                        ))}
+                                        <td className="p-3 text-right bg-blue-700">
+                                            ${formatNumber(columnTotals.reduce((a, b) => a + b, 0))}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Financing Section Component
+        function FinancingSection({ 
+            assetType, 
+            capexData, 
+            constructionPeriods, 
+            operationsPeriods, 
+            modelType,
+            interestRate 
+        }) {
+            // Financing Settings
+            const [repaymentMethod, setRepaymentMethod] = useState('agreed');
+            const [repaymentPeriod, setRepaymentPeriod] = useState(60);
+            const [paymentType, setPaymentType] = useState('amortizing');
+            const [minCashReserve, setMinCashReserve] = useState(1000000);
+            const [sweepPercentage, setSweepPercentage] = useState(50);
+            const [capitalizeInterest, setCapitalizeInterest] = useState(true);
+            const [debtDrawdownStartPeriod, setDebtDrawdownStartPeriod] = useState(7);
+            
+            // Capital Structure
+            const [capitalStructureMode, setCapitalStructureMode] = useState('fixed'); // fixed or separate
+            const [fixedDebtPercent, setFixedDebtPercent] = useState(60);
+            const [financeDebtPercent, setFinanceDebtPercent] = useState(70);
+            
+            // Line item financing (for separate mode)
+            const [lineItemFinancing, setLineItemFinancing] = useState({});
+            
+            // Equity Investors
+            const [investors, setInvestors] = useState([
+                { id: 1, name: 'Investor A', ownership: 60 },
+                { id: 2, name: 'Investor B', ownership: 40 }
+            ]);
+            const [nextInvestorId, setNextInvestorId] = useState(3);
+            
+            const totalPeriods = constructionPeriods + operationsPeriods;
+            const periodLabel = modelType === 'monthly' ? 'Month' : 'Year';
+            const periodsPerYear = modelType === 'monthly' ? 12 : 1;
+            
+            // Initialize line item financing from capex data
+            useEffect(() => {
+                if (capexData && capexData.length > 0) {
+                    const initial = {};
+                    capexData.forEach(item => {
+                        if (!lineItemFinancing[item.name]) {
+                            initial[item.name] = {
+                                equityPercent: item.name === 'Land (Cash Portion)' ? 100 : 40
+                            };
+                        }
+                    });
+                    if (Object.keys(initial).length > 0) {
+                        setLineItemFinancing({ ...lineItemFinancing, ...initial });
+                    }
+                }
+            }, [capexData]);
+            
+            // Get equity % for a line item
+            const getEquityPercent = (itemName) => {
+                if (capitalStructureMode === 'fixed') {
+                    return 100 - fixedDebtPercent;
+                }
+                return lineItemFinancing[itemName]?.equityPercent || 40;
+            };
+            
+            // Get debt % for a line item
+            const getDebtPercent = (itemName) => {
+                return 100 - getEquityPercent(itemName);
+            };
+            
+            // Update line item equity %
+            const updateLineItemEquity = (itemName, equityPercent) => {
+                setLineItemFinancing({
+                    ...lineItemFinancing,
+                    [itemName]: { equityPercent: parseFloat(equityPercent) || 0 }
+                });
+            };
+            
+            // Calculate financing structure
+            const financingStructure = useMemo(() => {
+                if (!capexData) return [];
+                
+                return capexData.map(item => {
+                    const total = item.total;
+                    const equityPercent = getEquityPercent(item.name);
+                    const debtPercent = 100 - equityPercent;
+                    const equityAmount = (total * equityPercent) / 100;
+                    const debtAmount = (total * debtPercent) / 100;
+                    
+                    return {
+                        name: item.name,
+                        total,
+                        equityPercent,
+                        equityAmount,
+                        debtPercent,
+                        debtAmount
+                    };
+                });
+            }, [capexData, capitalStructureMode, fixedDebtPercent, lineItemFinancing]);
+            
+            // Calculate totals
+            const totals = useMemo(() => {
+                const total = financingStructure.reduce((sum, item) => sum + item.total, 0);
+                const equity = financingStructure.reduce((sum, item) => sum + item.equityAmount, 0);
+                const debt = financingStructure.reduce((sum, item) => sum + item.debtAmount, 0);
+                
+                return {
+                    total,
+                    equity,
+                    debt,
+                    equityPercent: total > 0 ? (equity / total) * 100 : 0,
+                    debtPercent: total > 0 ? (debt / total) * 100 : 0
+                };
+            }, [financingStructure]);
+            
+            // Calculate drawdown schedule
+            const drawdownSchedule = useMemo(() => {
+                if (!capexData) return { debt: [], equity: [], total: [] };
+                
+                const debtDrawdown = Array(totalPeriods).fill(0);
+                const equityDrawdown = Array(totalPeriods).fill(0);
+                
+                // Process each cost item
+                capexData.forEach(item => {
+                    item.amounts.forEach((amount, periodIdx) => {
+                        if (amount > 0 && periodIdx < constructionPeriods) {
+                            const equityPercent = getEquityPercent(item.name);
+                            const debtPercent = 100 - equityPercent;
+                            
+                            // Drawdown in previous period (or same period if period 0)
+                            const drawdownPeriod = Math.max(0, periodIdx - 1);
+                            
+                            if (drawdownPeriod >= debtDrawdownStartPeriod - 1) {
+                                debtDrawdown[drawdownPeriod] += (amount * debtPercent) / 100;
+                            }
+                            equityDrawdown[drawdownPeriod] += (amount * equityPercent) / 100;
+                        }
+                    });
+                });
+                
+                const totalDrawdown = debtDrawdown.map((debt, i) => debt + equityDrawdown[i]);
+                
+                return {
+                    debt: debtDrawdown,
+                    equity: equityDrawdown,
+                    total: totalDrawdown
+                };
+            }, [capexData, financingStructure, debtDrawdownStartPeriod, constructionPeriods, totalPeriods]);
+            
+            // Calculate debt balance schedule
+            const debtBalanceSchedule = useMemo(() => {
+                const opening = Array(totalPeriods).fill(0);
+                const drawdown = drawdownSchedule.debt;
+                const interestCharged = Array(totalPeriods).fill(0);
+                const interestCapitalized = Array(totalPeriods).fill(0);
+                const interestPaid = Array(totalPeriods).fill(0);
+                const principalRepayment = Array(totalPeriods).fill(0);
+                const closing = Array(totalPeriods).fill(0);
+                
+                const periodRate = (interestRate / 100) / periodsPerYear;
+                
+                for (let i = 0; i < totalPeriods; i++) {
+                    // Opening balance
+                    opening[i] = i === 0 ? 0 : closing[i - 1];
+                    
+                    // Interest on opening balance
+                    interestCharged[i] = opening[i] * periodRate;
+                    
+                    // During construction: capitalize interest
+                    if (i < constructionPeriods && capitalizeInterest) {
+                        interestCapitalized[i] = interestCharged[i];
+                        interestPaid[i] = 0;
+                    } else {
+                        // During operations: pay interest
+                        interestCapitalized[i] = 0;
+                        interestPaid[i] = interestCharged[i];
+                    }
+                    
+                    // Principal repayment (only during operations)
+                    if (i >= constructionPeriods) {
+                        const remainingPeriods = totalPeriods - i;
+                        const outstandingBalance = opening[i] + interestCapitalized[i] + drawdown[i];
+                        
+                        if (repaymentMethod === 'agreed') {
+                            if (paymentType === 'amortizing') {
+                                // Amortization formula
+                                const n = Math.min(repaymentPeriod, remainingPeriods);
+                                if (n > 0 && outstandingBalance > 0) {
+                                    const payment = (outstandingBalance * periodRate * Math.pow(1 + periodRate, n)) / 
+                                                  (Math.pow(1 + periodRate, n) - 1);
+                                    principalRepayment[i] = Math.min(payment - interestPaid[i], outstandingBalance);
+                                }
+                            } else {
+                                // Interest only + balloon
+                                if (i === totalPeriods - 1) {
+                                    principalRepayment[i] = outstandingBalance;
+                                }
+                            }
+                        } else {
+                            // Cash sweep - simplified (would need revenue data)
+                            principalRepayment[i] = 0; // Placeholder
+                        }
+                    }
+                    
+                    // Closing balance
+                    closing[i] = opening[i] + drawdown[i] + interestCapitalized[i] - principalRepayment[i];
+                }
+                
+                return {
+                    opening,
+                    drawdown,
+                    interestCharged,
+                    interestCapitalized,
+                    interestPaid,
+                    principalRepayment,
+                    closing
+                };
+            }, [drawdownSchedule, totalPeriods, constructionPeriods, interestRate, periodsPerYear, 
+                capitalizeInterest, repaymentMethod, paymentType, repaymentPeriod]);
+            
+            // Equity investor contributions
+            const investorContributions = useMemo(() => {
+                return investors.map(investor => ({
+                    ...investor,
+                    contributions: drawdownSchedule.equity.map(eq => (eq * investor.ownership) / 100),
+                    total: drawdownSchedule.equity.reduce((sum, eq) => sum + (eq * investor.ownership) / 100, 0)
+                }));
+            }, [investors, drawdownSchedule]);
+            
+            // Investor management
+            const addInvestor = () => {
+                setInvestors([...investors, { id: nextInvestorId, name: `Investor ${String.fromCharCode(64 + nextInvestorId)}`, ownership: 0 }]);
+                setNextInvestorId(nextInvestorId + 1);
+            };
+            
+            const deleteInvestor = (id) => {
+                setInvestors(investors.filter(inv => inv.id !== id));
+            };
+            
+            const updateInvestor = (id, field, value) => {
+                setInvestors(investors.map(inv => 
+                    inv.id === id ? { ...inv, [field]: value } : inv
+                ));
+            };
+            
+            const totalInvestorOwnership = investors.reduce((sum, inv) => sum + (inv.ownership || 0), 0);
+            
+            const formatNumber = (num) => {
+                if (num === 0) return '0';
+                if (Math.abs(num) >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+                if (Math.abs(num) >= 1000) return (num / 1000).toFixed(0) + 'K';
+                return num.toFixed(0);
+            };
+            
+            return (
+                <div className="module-card p-6 mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800 mb-6">{assetType} - Financing Structure</h3>
+                    
+                    {/* Debt Repayment Terms */}
+                    <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                        <h4 className="font-bold text-gray-700 mb-3">Debt Repayment Terms</h4>
+                        <div className="grid grid-cols-5 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Repayment Method</label>
+                                <select
+                                    value={repaymentMethod}
+                                    onChange={(e) => setRepaymentMethod(e.target.value)}
+                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                                >
+                                    <option value="agreed">Agreed Terms</option>
+                                    <option value="sweep">Cash Sweep</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Payment Type</label>
+                                <select
+                                    value={paymentType}
+                                    onChange={(e) => setPaymentType(e.target.value)}
+                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                                >
+                                    <option value="amortizing">Amortizing</option>
+                                    <option value="interest_balloon">Interest Only + Balloon</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Repayment Period</label>
+                                <input
+                                    type="number"
+                                    value={repaymentPeriod}
+                                    onChange={(e) => setRepaymentPeriod(parseInt(e.target.value) || 0)}
+                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Interest Rate (%)</label>
+                                <input
+                                    type="number"
+                                    value={interestRate}
+                                    disabled
+                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm bg-gray-200"
+                                    step="0.1"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Debt Start Period</label>
+                                <input
+                                    type="number"
+                                    value={debtDrawdownStartPeriod}
+                                    onChange={(e) => setDebtDrawdownStartPeriod(parseInt(e.target.value) || 0)}
+                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                                    min="0"
+                                />
+                            </div>
+                        </div>
+                        <div className="mt-3 flex items-center gap-4">
+                            <label className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={capitalizeInterest}
+                                    onChange={(e) => setCapitalizeInterest(e.target.checked)}
+                                    className="w-4 h-4"
+                                />
+                                <span className="text-sm text-gray-700">Capitalize Interest During Construction</span>
+                            </label>
+                            <span className="text-xs text-gray-500">(Interest calculated on Opening Balance)</span>
+                        </div>
+                    </div>
+                    
+                    {/* Capital Structure Selection */}
+                    <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                        <h4 className="font-bold text-gray-700 mb-3">Capital Structure</h4>
+                        <div className="flex gap-6 mb-3">
+                            <label className="flex items-center gap-2">
+                                <input
+                                    type="radio"
+                                    checked={capitalStructureMode === 'fixed'}
+                                    onChange={() => setCapitalStructureMode('fixed')}
+                                    className="w-4 h-4"
+                                />
+                                <span className="text-sm text-gray-700">Fixed % for all items</span>
+                            </label>
+                            <label className="flex items-center gap-2">
+                                <input
+                                    type="radio"
+                                    checked={capitalStructureMode === 'separate'}
+                                    onChange={() => setCapitalStructureMode('separate')}
+                                    className="w-4 h-4"
+                                />
+                                <span className="text-sm text-gray-700">Separate % by line item</span>
+                            </label>
+                        </div>
+                        
+                        {capitalStructureMode === 'fixed' && (
+                            <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Debt %</label>
+                                    <input
+                                        type="number"
+                                        value={fixedDebtPercent}
+                                        onChange={(e) => setFixedDebtPercent(parseFloat(e.target.value) || 0)}
+                                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                                        step="1"
+                                        min="0"
+                                        max="100"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Equity %</label>
+                                    <div className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm bg-gray-100 font-medium">
+                                        {(100 - fixedDebtPercent).toFixed(1)}%
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Finance Cost Debt %</label>
+                                    <input
+                                        type="number"
+                                        value={financeDebtPercent}
+                                        onChange={(e) => setFinanceDebtPercent(parseFloat(e.target.value) || 0)}
+                                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                                        step="1"
+                                        min="0"
+                                        max="100"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Financing Structure Table */}
+                    <div className="mb-6">
+                        <h4 className="font-bold text-gray-700 mb-3">Financing Structure</h4>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-gray-800 text-white">
+                                        <th className="p-2 text-left">Description</th>
+                                        <th className="p-2 text-right">Total</th>
+                                        <th className="p-2 text-center">Equity %</th>
+                                        <th className="p-2 text-right">Equity $</th>
+                                        <th className="p-2 text-center">Debt %</th>
+                                        <th className="p-2 text-right">Debt $</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {financingStructure.map((item, idx) => (
+                                        <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                            <td className="p-2 border font-medium">{item.name}</td>
+                                            <td className="p-2 border text-right">${formatNumber(item.total)}</td>
+                                            <td className="p-2 border text-center">
+                                                {capitalStructureMode === 'separate' ? (
+                                                    <input
+                                                        type="number"
+                                                        value={item.equityPercent.toFixed(1)}
+                                                        onChange={(e) => updateLineItemEquity(item.name, e.target.value)}
+                                                        className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center"
+                                                        step="1"
+                                                        min="0"
+                                                        max="100"
+                                                    />
+                                                ) : (
+                                                    <span>{item.equityPercent.toFixed(1)}%</span>
+                                                )}
+                                            </td>
+                                            <td className="p-2 border text-right text-green-700 font-semibold">${formatNumber(item.equityAmount)}</td>
+                                            <td className="p-2 border text-center">{item.debtPercent.toFixed(1)}%</td>
+                                            <td className="p-2 border text-right text-red-700 font-semibold">${formatNumber(item.debtAmount)}</td>
+                                        </tr>
+                                    ))}
+                                    <tr className="bg-blue-600 text-white font-bold">
+                                        <td className="p-3">TOTAL</td>
+                                        <td className="p-3 text-right">${formatNumber(totals.total)}</td>
+                                        <td className="p-3 text-center">{totals.equityPercent.toFixed(1)}%</td>
+                                        <td className="p-3 text-right">${formatNumber(totals.equity)}</td>
+                                        <td className="p-3 text-center">{totals.debtPercent.toFixed(1)}%</td>
+                                        <td className="p-3 text-right">${formatNumber(totals.debt)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {/* Drawdown Schedule */}
+                    <div className="mb-6">
+                        <h4 className="font-bold text-gray-700 mb-3">Drawdown Schedule</h4>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                                <thead>
+                                    <tr className="bg-gray-800 text-white">
+                                        <th className="p-2 text-left sticky left-0 bg-gray-800 z-10">Source</th>
+                                        <th className="p-2 text-right bg-gray-900">Total</th>
+                                        {Array.from({ length: constructionPeriods }, (_, i) => (
+                                            <th key={i} className="p-2 text-center">{periodLabel} {i}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr className="bg-red-50">
+                                        <td className="p-2 border font-medium sticky left-0 bg-red-50 z-10">Debt Drawdown</td>
+                                        <td className="p-2 border text-right font-semibold bg-red-100">
+                                            ${formatNumber(drawdownSchedule.debt.reduce((a,b) => a+b, 0))}
+                                        </td>
+                                        {drawdownSchedule.debt.slice(0, constructionPeriods).map((amt, i) => (
+                                            <td key={i} className="p-2 border text-right">
+                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                    <tr className="bg-green-50">
+                                        <td className="p-2 border font-medium sticky left-0 bg-green-50 z-10">Equity Contribution</td>
+                                        <td className="p-2 border text-right font-semibold bg-green-100">
+                                            ${formatNumber(drawdownSchedule.equity.reduce((a,b) => a+b, 0))}
+                                        </td>
+                                        {drawdownSchedule.equity.slice(0, constructionPeriods).map((amt, i) => (
+                                            <td key={i} className="p-2 border text-right">
+                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                    <tr className="bg-blue-600 text-white font-bold">
+                                        <td className="p-3 sticky left-0 bg-blue-600 z-10">TOTAL FUNDING</td>
+                                        <td className="p-3 text-right bg-blue-700">
+                                            ${formatNumber(drawdownSchedule.total.reduce((a,b) => a+b, 0))}
+                                        </td>
+                                        {drawdownSchedule.total.slice(0, constructionPeriods).map((amt, i) => (
+                                            <td key={i} className="p-3 text-right">
+                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {/* Debt Balance Schedule */}
+                    <div className="mb-6">
+                        <h4 className="font-bold text-gray-700 mb-3">Debt Balance Schedule (Full Project)</h4>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                                <thead>
+                                    <tr className="bg-gray-800 text-white">
+                                        <th className="p-2 text-left sticky left-0 bg-gray-800 z-10">Line Item</th>
+                                        {Array.from({ length: Math.min(totalPeriods, 25) }, (_, i) => (
+                                            <th key={i} className="p-2 text-center">{periodLabel} {i}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr className="bg-white">
+                                        <td className="p-2 border font-medium sticky left-0 bg-white z-10">Opening Balance</td>
+                                        {debtBalanceSchedule.opening.slice(0, 25).map((amt, i) => (
+                                            <td key={i} className="p-2 border text-right">
+                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                    <tr className="bg-gray-50">
+                                        <td className="p-2 border font-medium sticky left-0 bg-gray-50 z-10">New Drawdown</td>
+                                        {debtBalanceSchedule.drawdown.slice(0, 25).map((amt, i) => (
+                                            <td key={i} className="p-2 border text-right">
+                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                    <tr className="bg-white">
+                                        <td className="p-2 border font-medium sticky left-0 bg-white z-10">Interest Charged</td>
+                                        {debtBalanceSchedule.interestCharged.slice(0, 25).map((amt, i) => (
+                                            <td key={i} className="p-2 border text-right">
+                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                    <tr className="bg-yellow-50">
+                                        <td className="p-2 border font-medium sticky left-0 bg-yellow-50 z-10">Interest Capitalized</td>
+                                        {debtBalanceSchedule.interestCapitalized.slice(0, 25).map((amt, i) => (
+                                            <td key={i} className="p-2 border text-right">
+                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                    <tr className="bg-white">
+                                        <td className="p-2 border font-medium sticky left-0 bg-white z-10">Interest Paid (Cash)</td>
+                                        {debtBalanceSchedule.interestPaid.slice(0, 25).map((amt, i) => (
+                                            <td key={i} className="p-2 border text-right">
+                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                    <tr className="bg-gray-50">
+                                        <td className="p-2 border font-medium sticky left-0 bg-gray-50 z-10">Principal Repayment</td>
+                                        {debtBalanceSchedule.principalRepayment.slice(0, 25).map((amt, i) => (
+                                            <td key={i} className="p-2 border text-right">
+                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                    <tr className="bg-blue-100 font-bold">
+                                        <td className="p-3 sticky left-0 bg-blue-100 z-10">Closing Balance</td>
+                                        {debtBalanceSchedule.closing.slice(0, 25).map((amt, i) => (
+                                            <td key={i} className="p-3 text-right">
+                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {/* Equity Investor Distribution */}
+                    <div>
+                        <div className="flex justify-between items-center mb-3">
+                            <h4 className="font-bold text-gray-700">Equity Investor Distribution</h4>
+                            <button
+                                onClick={addInvestor}
+                                className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                            >
+                                + Add Investor
+                            </button>
+                        </div>
+                        
+                        <div className="mb-3 flex items-center gap-4">
+                            <span className="text-sm text-gray-600">Total Ownership:</span>
+                            <span className={`text-lg font-bold ${Math.abs(totalInvestorOwnership - 100) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
+                                {totalInvestorOwnership.toFixed(1)}%
+                            </span>
+                            {Math.abs(totalInvestorOwnership - 100) >= 0.01 && (
+                                <span className="text-sm text-red-600">⚠️ Must equal 100%</span>
+                            )}
+                        </div>
+                        
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                                <thead>
+                                    <tr className="bg-gray-800 text-white">
+                                        <th className="p-2 text-left">Investor</th>
+                                        <th className="p-2 text-center">Ownership %</th>
+                                        <th className="p-2 text-right">Total Equity</th>
+                                        {Array.from({ length: Math.min(constructionPeriods, 12) }, (_, i) => (
+                                            <th key={i} className="p-2 text-center">{periodLabel} {i}</th>
+                                        ))}
+                                        <th className="p-2 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {investorContributions.map((investor, idx) => (
+                                        <tr key={investor.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                            <td className="p-2 border">
+                                                <input
+                                                    type="text"
+                                                    value={investor.name}
+                                                    onChange={(e) => updateInvestor(investor.id, 'name', e.target.value)}
+                                                    className="w-full px-2 py-1 border border-gray-300 rounded"
+                                                />
+                                            </td>
+                                            <td className="p-2 border text-center">
+                                                <input
+                                                    type="number"
+                                                    value={investor.ownership}
+                                                    onChange={(e) => updateInvestor(investor.id, 'ownership', parseFloat(e.target.value) || 0)}
+                                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
+                                                    step="0.1"
+                                                />
+                                            </td>
+                                            <td className="p-2 border text-right font-semibold text-green-700">
+                                                ${formatNumber(investor.total)}
+                                            </td>
+                                            {investor.contributions.slice(0, 12).map((amt, i) => (
+                                                <td key={i} className="p-2 border text-right">
+                                                    {amt > 0 ? `$${formatNumber(amt)}` : '-'}
+                                                </td>
+                                            ))}
+                                            <td className="p-2 border text-center">
+                                                {investors.length > 1 && (
+                                                    <button
+                                                        onClick={() => deleteInvestor(investor.id)}
+                                                        className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    <tr className="bg-green-600 text-white font-bold">
+                                        <td className="p-3">TOTAL EQUITY</td>
+                                        <td className="p-3 text-center">100%</td>
+                                        <td className="p-3 text-right">${formatNumber(totals.equity)}</td>
+                                        {drawdownSchedule.equity.slice(0, 12).map((amt, i) => (
+                                            <td key={i} className="p-3 text-right">
+                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
+                                            </td>
+                                        ))}
+                                        <td className="p-3"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
 
         function RealEstatePlatform() {
             // ========== STATE ==========
@@ -930,32 +2204,97 @@
                                     </div>
                                 )}
 
-                                {/* COSTS TAB - Placeholder for now */}
+                                {/* COSTS TAB - Full Implementation */}
                                 {activeTab === 'costs' && (
-                                    <div className="module-card p-6">
-                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Development Costs</h3>
-                                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
-                                            <p className="text-sm text-blue-800">
-                                                <strong>📝 Development Costs Tab</strong><br/>
-                                                This section will include 3 separate cost sections (Residential, Hospitality, Retail) 
-                                                with phasing tables and CAPEX summaries. Full implementation coming next.
-                                            </p>
-                                        </div>
+                                    <div className="space-y-8">
+                                        <DevelopmentCostsSection 
+                                            assetType="Residential"
+                                            totalArea={residentialTotalArea}
+                                            netArea={residentialNetArea}
+                                            gfa={residentialGFA}
+                                            bua={residentialBUA}
+                                            landCashPortion={residentialLandValue * (cashPercent / 100)}
+                                            constructionPeriods={constructionPeriods}
+                                            modelType={modelType}
+                                        />
+                                        <DevelopmentCostsSection 
+                                            assetType="Hospitality"
+                                            totalArea={hospitalityTotalArea}
+                                            netArea={hospitalityNetArea}
+                                            gfa={hospitalityGFA}
+                                            bua={hospitalityBUA}
+                                            landCashPortion={hospitalityLandValue * (cashPercent / 100)}
+                                            constructionPeriods={constructionPeriods}
+                                            modelType={modelType}
+                                        />
+                                        <DevelopmentCostsSection 
+                                            assetType="Retail"
+                                            totalArea={retailTotalArea}
+                                            netArea={retailNetArea}
+                                            gfa={retailGFA}
+                                            bua={retailBUA}
+                                            landCashPortion={retailLandValue * (cashPercent / 100)}
+                                            constructionPeriods={constructionPeriods}
+                                            modelType={modelType}
+                                        />
                                     </div>
                                 )}
 
-                                {/* FINANCING TAB - Placeholder for now */}
+                                {/* FINANCING TAB - Full Implementation */}
                                 {activeTab === 'financing' && (
-                                    <div className="module-card p-6">
-                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Financing Structure</h3>
-                                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
-                                            <p className="text-sm text-blue-800">
-                                                <strong>📝 Financing Tab</strong><br/>
-                                                This section will include debt repayment terms, capital structure, 
-                                                finance cost capitalization, drawdown schedules, and debt balance schedules. 
-                                                Full implementation coming next.
-                                            </p>
-                                        </div>
+                                    <div className="space-y-8">
+                                        <FinancingSection 
+                                            assetType="Residential"
+                                            capexData={(() => {
+                                                // Placeholder - In production, this would pull from Development Costs
+                                                const landCash = residentialLandValue * (cashPercent / 100);
+                                                return [
+                                                    { name: 'Land (Cash Portion)', total: landCash, amounts: Array(constructionPeriods).fill(0).map((_, i) => i === 0 ? landCash : 0) },
+                                                    { name: 'Infrastructure Development', total: residentialNetArea * 500, amounts: Array(constructionPeriods).fill(0).map((_, i) => i >= 1 && i <= 3 ? (residentialNetArea * 500) / 3 : 0) },
+                                                    { name: 'Construction Cost', total: residentialBUA * 1500, amounts: Array(constructionPeriods).fill(0).map((_, i) => i >= 3 && i <= 8 ? (residentialBUA * 1500) / 6 : 0) },
+                                                    { name: 'Professional Fees', total: (residentialBUA * 1500) * 0.08, amounts: Array(constructionPeriods).fill((residentialBUA * 1500) * 0.08 / constructionPeriods) },
+                                                    { name: 'Contingency', total: (landCash + residentialNetArea * 500 + residentialBUA * 1500) * 0.05, amounts: Array(constructionPeriods).fill((landCash + residentialNetArea * 500 + residentialBUA * 1500) * 0.05 / constructionPeriods) },
+                                                ];
+                                            })()}
+                                            constructionPeriods={constructionPeriods}
+                                            operationsPeriods={operationsPeriods}
+                                            modelType={modelType}
+                                            interestRate={interestRate}
+                                        />
+                                        <FinancingSection 
+                                            assetType="Hospitality"
+                                            capexData={(() => {
+                                                const landCash = hospitalityLandValue * (cashPercent / 100);
+                                                return [
+                                                    { name: 'Land (Cash Portion)', total: landCash, amounts: Array(constructionPeriods).fill(0).map((_, i) => i === 0 ? landCash : 0) },
+                                                    { name: 'Infrastructure Development', total: hospitalityNetArea * 500, amounts: Array(constructionPeriods).fill(0).map((_, i) => i >= 1 && i <= 3 ? (hospitalityNetArea * 500) / 3 : 0) },
+                                                    { name: 'Construction Cost', total: hospitalityBUA * 1500, amounts: Array(constructionPeriods).fill(0).map((_, i) => i >= 3 && i <= 8 ? (hospitalityBUA * 1500) / 6 : 0) },
+                                                    { name: 'Professional Fees', total: (hospitalityBUA * 1500) * 0.08, amounts: Array(constructionPeriods).fill((hospitalityBUA * 1500) * 0.08 / constructionPeriods) },
+                                                    { name: 'Contingency', total: (landCash + hospitalityNetArea * 500 + hospitalityBUA * 1500) * 0.05, amounts: Array(constructionPeriods).fill((landCash + hospitalityNetArea * 500 + hospitalityBUA * 1500) * 0.05 / constructionPeriods) },
+                                                ];
+                                            })()}
+                                            constructionPeriods={constructionPeriods}
+                                            operationsPeriods={operationsPeriods}
+                                            modelType={modelType}
+                                            interestRate={interestRate}
+                                        />
+                                        <FinancingSection 
+                                            assetType="Retail"
+                                            capexData={(() => {
+                                                const landCash = retailLandValue * (cashPercent / 100);
+                                                return [
+                                                    { name: 'Land (Cash Portion)', total: landCash, amounts: Array(constructionPeriods).fill(0).map((_, i) => i === 0 ? landCash : 0) },
+                                                    { name: 'Infrastructure Development', total: retailNetArea * 500, amounts: Array(constructionPeriods).fill(0).map((_, i) => i >= 1 && i <= 3 ? (retailNetArea * 500) / 3 : 0) },
+                                                    { name: 'Construction Cost', total: retailBUA * 1500, amounts: Array(constructionPeriods).fill(0).map((_, i) => i >= 3 && i <= 8 ? (retailBUA * 1500) / 6 : 0) },
+                                                    { name: 'Professional Fees', total: (retailBUA * 1500) * 0.08, amounts: Array(constructionPeriods).fill((retailBUA * 1500) * 0.08 / constructionPeriods) },
+                                                    { name: 'Contingency', total: (landCash + retailNetArea * 500 + retailBUA * 1500) * 0.05, amounts: Array(constructionPeriods).fill((landCash + retailNetArea * 500 + retailBUA * 1500) * 0.05 / constructionPeriods) },
+                                                ];
+                                            })()}
+                                            constructionPeriods={constructionPeriods}
+                                            operationsPeriods={operationsPeriods}
+                                            modelType={modelType}
+                                            interestRate={interestRate}
+                                        />
                                     </div>
                                 )}
                             </div>
