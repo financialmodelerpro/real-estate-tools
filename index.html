@@ -700,25 +700,25 @@
                                                     <thead>
                                                         <tr className="bg-gray-700 text-white">
                                                             <th className="p-2 text-left">Description</th>
-                                                            <th className="p-2 text-right">Value</th>
+                                                            <th className="p-2 text-right">Value ({currency})</th>
                                                             <th className="p-2 text-left">Calculation</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <tr className="bg-white">
                                                             <td className="p-2 border">Total Land Value</td>
-                                                            <td className="p-2 border text-right font-bold">{formatCurrency(totalLandValue)}</td>
-                                                            <td className="p-2 border">{formatNumber(totalLandArea)} sqm × {formatCurrency(landValuePerSqm)}/sqm</td>
+                                                            <td className="p-2 border text-right font-bold">{formatNumber(totalLandValue)}</td>
+                                                            <td className="p-2 border">{formatNumber(totalLandArea)} sqm × {currency} {formatNumber(landValuePerSqm)}/sqm</td>
                                                         </tr>
                                                         <tr className="bg-green-50">
                                                             <td className="p-2 border">Cash Purchase</td>
-                                                            <td className="p-2 border text-right font-bold text-green-700">{formatCurrency(cashValue)}</td>
-                                                            <td className="p-2 border">{formatCurrency(totalLandValue)} × {cashPercent}%</td>
+                                                            <td className="p-2 border text-right font-bold text-green-700">{formatNumber(cashValue)}</td>
+                                                            <td className="p-2 border">{formatNumber(totalLandValue)} × {cashPercent}%</td>
                                                         </tr>
                                                         <tr className="bg-blue-50">
                                                             <td className="p-2 border">In-Kind Contribution</td>
-                                                            <td className="p-2 border text-right font-bold text-blue-700">{formatCurrency(inKindValue)}</td>
-                                                            <td className="p-2 border">{formatCurrency(totalLandValue)} × {inKindPercent}%</td>
+                                                            <td className="p-2 border text-right font-bold text-blue-700">{formatNumber(inKindValue)}</td>
+                                                            <td className="p-2 border">{formatNumber(totalLandValue)} × {inKindPercent}%</td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
@@ -789,14 +789,16 @@
                                                         <thead>
                                                             <tr className="bg-gray-700 text-white">
                                                                 <th className="p-2 text-left">Metric</th>
-                                                                <th className="p-2 text-center">Input/Value</th>
+                                                                <th className="p-2 text-center">Input</th>
+                                                                <th className="p-2 text-right">Value (sqm)</th>
                                                                 <th className="p-2 text-left">Calculation</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             <tr className="bg-blue-50">
                                                                 <td className="p-2 border font-medium">Total Allocated Area</td>
-                                                                <td className="p-2 border text-center font-bold">{formatNumber(residentialTotalArea)} sqm</td>
+                                                                <td className="p-2 border text-center">-</td>
+                                                                <td className="p-2 border text-right font-bold">{formatNumber(residentialTotalArea)}</td>
                                                                 <td className="p-2 border">{formatNumber(totalLandArea)} sqm × {residentialPercent}%</td>
                                                             </tr>
                                                             <tr className="bg-white">
@@ -806,17 +808,18 @@
                                                                         type="number"
                                                                         value={residentialRoadsPercent}
                                                                         onChange={(e) => setResidentialRoadsPercent(parseFloat(e.target.value) || 0)}
-                                                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center inline-block mr-1"
+                                                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
                                                                         min="0"
                                                                         max="100"
-                                                                    />
-                                                                    % = {formatNumber(residentialRoadsArea)} sqm
+                                                                    /> %
                                                                 </td>
+                                                                <td className="p-2 border text-right">{formatNumber(residentialRoadsArea)}</td>
                                                                 <td className="p-2 border">{formatNumber(residentialTotalArea)} sqm × {residentialRoadsPercent}%</td>
                                                             </tr>
                                                             <tr className="bg-green-100">
                                                                 <td className="p-2 border font-bold">Net Developable Area</td>
-                                                                <td className="p-2 border text-center font-bold text-green-700">{formatNumber(residentialNetArea)} sqm</td>
+                                                                <td className="p-2 border text-center">-</td>
+                                                                <td className="p-2 border text-right font-bold text-green-700">{formatNumber(residentialNetArea)}</td>
                                                                 <td className="p-2 border">{formatNumber(residentialTotalArea)} - {formatNumber(residentialRoadsArea)}</td>
                                                             </tr>
                                                             <tr className="bg-white">
@@ -826,12 +829,12 @@
                                                                         type="number"
                                                                         value={residentialFAR}
                                                                         onChange={(e) => setResidentialFAR(parseFloat(e.target.value) || 0)}
-                                                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center inline-block mx-1"
+                                                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
                                                                         step="0.1"
                                                                         min="0"
                                                                     />
-                                                                    = {formatNumber(residentialGFA)} sqm
                                                                 </td>
+                                                                <td className="p-2 border text-right font-bold">{formatNumber(residentialGFA)}</td>
                                                                 <td className="p-2 border">{formatNumber(residentialNetArea)} sqm × {residentialFAR}</td>
                                                             </tr>
                                                             <tr className="bg-blue-100">
@@ -841,12 +844,12 @@
                                                                         type="number"
                                                                         value={(residentialEfficiency * 100).toFixed(0)}
                                                                         onChange={(e) => setResidentialEfficiency(parseFloat(e.target.value) / 100 || 0)}
-                                                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center inline-block mx-1"
+                                                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
                                                                         min="0"
                                                                         max="100"
-                                                                    />
-                                                                    % = <span className="font-bold text-blue-700">{formatNumber(residentialBUA)} sqm</span>
+                                                                    /> %
                                                                 </td>
+                                                                <td className="p-2 border text-right font-bold text-blue-700">{formatNumber(residentialBUA)}</td>
                                                                 <td className="p-2 border">{formatNumber(residentialGFA)} sqm × {(residentialEfficiency * 100).toFixed(0)}%</td>
                                                             </tr>
                                                         </tbody>
@@ -864,14 +867,16 @@
                                                         <thead>
                                                             <tr className="bg-gray-700 text-white">
                                                                 <th className="p-2 text-left">Metric</th>
-                                                                <th className="p-2 text-center">Input/Value</th>
+                                                                <th className="p-2 text-center">Input</th>
+                                                                <th className="p-2 text-right">Value (sqm)</th>
                                                                 <th className="p-2 text-left">Calculation</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             <tr className="bg-green-50">
                                                                 <td className="p-2 border font-medium">Total Allocated Area</td>
-                                                                <td className="p-2 border text-center font-bold">{formatNumber(hospitalityTotalArea)} sqm</td>
+                                                                <td className="p-2 border text-center">-</td>
+                                                                <td className="p-2 border text-right font-bold">{formatNumber(hospitalityTotalArea)}</td>
                                                                 <td className="p-2 border">{formatNumber(totalLandArea)} sqm × {hospitalityPercent}%</td>
                                                             </tr>
                                                             <tr className="bg-white">
@@ -881,17 +886,18 @@
                                                                         type="number"
                                                                         value={hospitalityRoadsPercent}
                                                                         onChange={(e) => setHospitalityRoadsPercent(parseFloat(e.target.value) || 0)}
-                                                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center inline-block mr-1"
+                                                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
                                                                         min="0"
                                                                         max="100"
-                                                                    />
-                                                                    % = {formatNumber(hospitalityRoadsArea)} sqm
+                                                                    /> %
                                                                 </td>
+                                                                <td className="p-2 border text-right">{formatNumber(hospitalityRoadsArea)}</td>
                                                                 <td className="p-2 border">{formatNumber(hospitalityTotalArea)} sqm × {hospitalityRoadsPercent}%</td>
                                                             </tr>
                                                             <tr className="bg-green-100">
                                                                 <td className="p-2 border font-bold">Net Developable Area</td>
-                                                                <td className="p-2 border text-center font-bold text-green-700">{formatNumber(hospitalityNetArea)} sqm</td>
+                                                                <td className="p-2 border text-center">-</td>
+                                                                <td className="p-2 border text-right font-bold text-green-700">{formatNumber(hospitalityNetArea)}</td>
                                                                 <td className="p-2 border">{formatNumber(hospitalityTotalArea)} - {formatNumber(hospitalityRoadsArea)}</td>
                                                             </tr>
                                                             <tr className="bg-white">
@@ -901,12 +907,12 @@
                                                                         type="number"
                                                                         value={hospitalityFAR}
                                                                         onChange={(e) => setHospitalityFAR(parseFloat(e.target.value) || 0)}
-                                                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center inline-block mx-1"
+                                                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
                                                                         step="0.1"
                                                                         min="0"
                                                                     />
-                                                                    = {formatNumber(hospitalityGFA)} sqm
                                                                 </td>
+                                                                <td className="p-2 border text-right font-bold">{formatNumber(hospitalityGFA)}</td>
                                                                 <td className="p-2 border">{formatNumber(hospitalityNetArea)} sqm × {hospitalityFAR}</td>
                                                             </tr>
                                                             <tr className="bg-green-100">
@@ -916,12 +922,12 @@
                                                                         type="number"
                                                                         value={(hospitalityEfficiency * 100).toFixed(0)}
                                                                         onChange={(e) => setHospitalityEfficiency(parseFloat(e.target.value) / 100 || 0)}
-                                                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center inline-block mx-1"
+                                                                        className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
                                                                         min="0"
                                                                         max="100"
-                                                                    />
-                                                                    % = <span className="font-bold text-green-700">{formatNumber(hospitalityBUA)} sqm</span>
+                                                                    /> %
                                                                 </td>
+                                                                <td className="p-2 border text-right font-bold text-green-700">{formatNumber(hospitalityBUA)}</td>
                                                                 <td className="p-2 border">{formatNumber(hospitalityGFA)} sqm × {(hospitalityEfficiency * 100).toFixed(0)}%</td>
                                                             </tr>
                                                         </tbody>
@@ -938,14 +944,16 @@
                                                     <thead>
                                                         <tr className="bg-gray-700 text-white">
                                                             <th className="p-2 text-left">Metric</th>
-                                                            <th className="p-2 text-center">Input/Value</th>
+                                                            <th className="p-2 text-center">Input</th>
+                                                            <th className="p-2 text-right">Value (sqm)</th>
                                                             <th className="p-2 text-left">Calculation</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <tr className="bg-purple-50">
                                                             <td className="p-2 border font-medium">Total Allocated Area</td>
-                                                            <td className="p-2 border text-center font-bold">{formatNumber(retailTotalArea)} sqm</td>
+                                                            <td className="p-2 border text-center">-</td>
+                                                            <td className="p-2 border text-right font-bold">{formatNumber(retailTotalArea)}</td>
                                                             <td className="p-2 border">{formatNumber(totalLandArea)} sqm × {retailPercent}%</td>
                                                         </tr>
                                                         <tr className="bg-white">
@@ -955,17 +963,18 @@
                                                                     type="number"
                                                                     value={retailRoadsPercent}
                                                                     onChange={(e) => setRetailRoadsPercent(parseFloat(e.target.value) || 0)}
-                                                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center inline-block mr-1"
+                                                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
                                                                     min="0"
                                                                     max="100"
-                                                                />
-                                                                % = {formatNumber(retailRoadsArea)} sqm
+                                                                /> %
                                                             </td>
+                                                            <td className="p-2 border text-right">{formatNumber(retailRoadsArea)}</td>
                                                             <td className="p-2 border">{formatNumber(retailTotalArea)} sqm × {retailRoadsPercent}%</td>
                                                         </tr>
                                                         <tr className="bg-purple-100">
                                                             <td className="p-2 border font-bold">Net Developable Area</td>
-                                                            <td className="p-2 border text-center font-bold text-purple-700">{formatNumber(retailNetArea)} sqm</td>
+                                                            <td className="p-2 border text-center">-</td>
+                                                            <td className="p-2 border text-right font-bold text-purple-700">{formatNumber(retailNetArea)}</td>
                                                             <td className="p-2 border">{formatNumber(retailTotalArea)} - {formatNumber(retailRoadsArea)}</td>
                                                         </tr>
                                                         <tr className="bg-white">
@@ -975,12 +984,12 @@
                                                                     type="number"
                                                                     value={retailFAR}
                                                                     onChange={(e) => setRetailFAR(parseFloat(e.target.value) || 0)}
-                                                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center inline-block mx-1"
+                                                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
                                                                     step="0.1"
                                                                     min="0"
                                                                 />
-                                                                = {formatNumber(retailGFA)} sqm
                                                             </td>
+                                                            <td className="p-2 border text-right font-bold">{formatNumber(retailGFA)}</td>
                                                             <td className="p-2 border">{formatNumber(retailNetArea)} sqm × {retailFAR}</td>
                                                         </tr>
                                                         <tr className="bg-purple-100">
@@ -990,12 +999,12 @@
                                                                     type="number"
                                                                     value={(retailEfficiency * 100).toFixed(0)}
                                                                     onChange={(e) => setRetailEfficiency(parseFloat(e.target.value) / 100 || 0)}
-                                                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center inline-block mx-1"
+                                                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
                                                                     min="0"
                                                                     max="100"
-                                                                />
-                                                                % = <span className="font-bold text-purple-700">{formatNumber(retailBUA)} sqm</span>
+                                                                /> %
                                                             </td>
+                                                            <td className="p-2 border text-right font-bold text-purple-700">{formatNumber(retailBUA)}</td>
                                                             <td className="p-2 border">{formatNumber(retailGFA)} sqm × {(retailEfficiency * 100).toFixed(0)}%</td>
                                                         </tr>
                                                     </tbody>
