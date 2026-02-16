@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Estate Financial Modeling Platform - Module 1 Complete</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+        }
+        .module-card { 
+            background: white; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07); 
+            transition: all 0.3s; 
+        }
+        .module-card:hover { 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12); 
+            transform: translateY(-2px); 
+        }
+        .gradient-bg { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+        }
+        input[type="number"], input[type="text"], input[type="date"], select { 
+            transition: all 0.2s; 
+        }
+        input:focus, select:focus { 
+            outline: none; 
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            transition: all 0.3s; 
+        }
+        .btn-primary:hover { 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); 
+        }
+        .table-container {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.875rem;
+        }
+        th {
+            position: sticky;
+            top: 0;
+            background: #1f2937;
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem;
+            text-align: center;
+            border: 1px solid #374151;
+        }
+        td {
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            text-align: right;
+        }
+        td:first-child {
+            text-align: left;
+            font-weight: 500;
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 1;
+        }
+        .total-row {
+            background: #e0e7ff;
+            font-weight: 700;
+        }
+        .sticky-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        /* Yellow input styling for assumptions */
+        .input-assumption {
+            background-color: #fef3c7 !important;
+            color: #1e40af !important;
+            font-weight: 600;
+            border: 1px solid #fbbf24 !important;
+        }
+        .editable-label {
+            background-color: #fef3c7;
+            color: #1e40af;
+            font-weight: 600;
+            border: 1px solid #fbbf24;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 300px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.75rem;
+            line-height: 1.4;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        function RealEstatePlatform() {
+            // State Management
+            const [activeModule, setActiveModule] = useState('overview');
+            const [activeTab, setActiveTab] = useState('timeline');
+            
+            // Timeline
+            const [projectName, setProjectName] = useState('Skyline');
+            const [projectType, setProjectType] = useState('mixed-use');
+            const [country, setCountry] = useState('United States');
+            const [currency, setCurrency] = useState('USD');
+            const [modelType, setModelType] = useState('monthly');
+            const [projectStart, setProjectStart] = useState('2025-01-01');
+            const [constructionPeriods, setConstructionPeriods] = useState(24);
+            const [operationsPeriods, setOperationsPeriods] = useState(60);
+            
+            // Handle model type change with auto-conversion
+            const handleModelTypeChange = (newType) => {
+                if (modelType === 'monthly' && newType === 'annual') {
+                    // Convert from monthly to annual
+                    setConstructionPeriods(Math.round(constructionPeriods / 12));
+                    setOperationsPeriods(Math.round(operationsPeriods / 12));
+                } else if (modelType === 'annual' && newType === 'monthly') {
+                    // Convert from annual to monthly
+                    setConstructionPeriods(constructionPeriods * 12);
+                    setOperationsPeriods(operationsPeriods * 12);
+                }
+                setModelType(newType);
+            };
+            
+            // Land & Area
+            const [cashPercent, setCashPercent] = useState(60);
+            const [inKindPercent, setInKindPercent] = useState(40);
+            const [totalLandArea, setTotalLandArea] = useState(100000);
+            const [landValuePerSqm, setLandValuePerSqm] = useState(500);
+            
+            const [residentialPercent, setResidentialPercent] = useState(50);
+            const [hospitalityPercent, setHospitalityPercent] = useState(30);
+            const [retailPercent, setRetailPercent] = useState(20);
+            
+            const [residentialRoadsPercent, setResidentialRoadsPercent] = useState(20);
+            const [hospitalityRoadsPercent, setHospitalityRoadsPercent] = useState(15);
+            const [retailRoadsPercent, setRetailRoadsPercent] = useState(10);
+            
+            const [residentialFAR, setResidentialFAR] = useState(1.5);
+            const [residentialEfficiency, setResidentialEfficiency] = useState(0.85);
+            const [hospitalityFAR, setHospitalityFAR] = useState(1.2);
+            const [hospitalityEfficiency, setHospitalityEfficiency] = useState(0.80);
+            const [retailFAR, setRetailFAR] = useState(1.0);
+            const [retailEfficiency, setRetailEfficiency] = useState(0.90);
+            
+            // Custom area metrics for each asset (editable/addable/deletable)
+            const [residentialMetrics, setResidentialMetrics] = useState([
+                { id: 1, name: 'Net Developable Area', type: 'calculated', formula: 'totalArea - roadsArea', isLocked: true },
+                { id: 2, name: 'FAR', type: 'input', value: 1.5, isLocked: false },
+                { id: 3, name: 'GFA', type: 'calculated', formula: 'netArea × FAR', isLocked: false },
+                { id: 4, name: 'Efficiency %', type: 'input', value: 85, isLocked: false },
+                { id: 5, name: 'BUA', type: 'calculated', formula: 'GFA × Efficiency%', isLocked: false }
+            ]);
+            const [hospitalityMetrics, setHospitalityMetrics] = useState([
+                { id: 1, name: 'Net Developable Area', type: 'calculated', formula: 'totalArea - roadsArea', isLocked: true },
+                { id: 2, name: 'FAR', type: 'input', value: 1.2, isLocked: false },
+                { id: 3, name: 'GFA', type: 'calculated', formula: 'netArea × FAR', isLocked: false },
+                { id: 4, name: 'Efficiency %', type: 'input', value: 80, isLocked: false },
+                { id: 5, name: 'BUA', type: 'calculated', formula: 'GFA × Efficiency%', isLocked: false }
+            ]);
+            const [retailMetrics, setRetailMetrics] = useState([
+                { id: 1, name: 'Net Developable Area', type: 'calculated', formula: 'totalArea - roadsArea', isLocked: true },
+                { id: 2, name: 'FAR', type: 'input', value: 1.0, isLocked: false },
+                { id: 3, name: 'GFA', type: 'calculated', formula: 'netArea × FAR', isLocked: false },
+                { id: 4, name: 'Efficiency %', type: 'input', value: 90, isLocked: false },
+                { id: 5, name: 'BUA', type: 'calculated', formula: 'GFA × Efficiency%', isLocked: false }
+            ]);
+            
+            // Financing
+            const [interestRate, setInterestRate] = useState(7.5);
+            
+            // Calculations
+            const totalLandValue = totalLandArea * landValuePerSqm;
+            const cashValue = (totalLandValue * cashPercent) / 100;
+            const inKindValue = (totalLandValue * inKindPercent) / 100;
+            
+            // Project end date calculation
+            const calculateProjectEndDate = () => {
+                const startDate = new Date(projectStart);
+                const totalMonths = modelType === 'monthly' 
+                    ? constructionPeriods + operationsPeriods 
+                    : (constructionPeriods + operationsPeriods) * 12;
+                
+                // Add months and subtract 1 day to get end of last month
+                const endDate = new Date(startDate);
+                endDate.setMonth(endDate.getMonth() + totalMonths);
+                endDate.setDate(0); // Last day of previous month
+                
+                return endDate.toISOString().split('T')[0];
+            };
+            
+            const projectEndDate = calculateProjectEndDate();
+            const totalProjectYears = modelType === 'monthly' 
+                ? ((constructionPeriods + operationsPeriods) / 12).toFixed(1)
+                : (constructionPeriods + operationsPeriods);
+            
+            // Determine which assets to show based on project type
+            const showResidential = projectType === 'residential' || projectType === 'mixed-use';
+            const showHospitality = projectType === 'hospitality' || projectType === 'mixed-use';
+            const showRetail = true; // Always show retail
+            
+            // Area allocation validation - only count visible assets
+            const totalAreaPercent = (showResidential ? residentialPercent : 0) + 
+                                    (showHospitality ? hospitalityPercent : 0) + 
+                                    retailPercent;
+            const areaAllocationValid = Math.abs(totalAreaPercent - 100) < 0.01;
+            
+            // Residential
+            const residentialTotalArea = (totalLandArea * residentialPercent) / 100;
+            const residentialRoadsArea = (residentialTotalArea * residentialRoadsPercent) / 100;
+            const residentialNetArea = residentialTotalArea - residentialRoadsArea;
+            const residentialGFA = residentialNetArea * residentialFAR;
+            const residentialBUA = residentialGFA * residentialEfficiency;
+            const residentialLandValue = residentialTotalArea * landValuePerSqm;
+            
+            // Hospitality
+            const hospitalityTotalArea = (totalLandArea * hospitalityPercent) / 100;
+            const hospitalityRoadsArea = (hospitalityTotalArea * hospitalityRoadsPercent) / 100;
+            const hospitalityNetArea = hospitalityTotalArea - hospitalityRoadsArea;
+            const hospitalityGFA = hospitalityNetArea * hospitalityFAR;
+            const hospitalityBUA = hospitalityGFA * hospitalityEfficiency;
+            const hospitalityLandValue = hospitalityTotalArea * landValuePerSqm;
+            
+            // Retail
+            const retailTotalArea = (totalLandArea * retailPercent) / 100;
+            const retailRoadsArea = (retailTotalArea * retailRoadsPercent) / 100;
+            const retailNetArea = retailTotalArea - retailRoadsArea;
+            const retailGFA = retailNetArea * retailFAR;
+            const retailBUA = retailGFA * retailEfficiency;
+            const retailLandValue = retailTotalArea * landValuePerSqm;
+            
+            const formatNumber = (num) => {
+                if (!num || num === 0) return '0';
+                return Math.round(num).toLocaleString('en-US');
+            };
+            
+            const formatCurrency = (num) => {
+                if (!num || num === 0) return currency + ' 0';
+                return currency + ' ' + Math.round(num).toLocaleString('en-US');
+            };
+
+            return (
+                <div className="min-h-screen">
+                    {/* Header */}
+                    <div className="gradient-bg text-white p-6 shadow-lg">
+                        <h1 className="text-3xl font-bold">Real Estate Financial Modeling Platform</h1>
+                        <p className="text-sm opacity-90 mt-1">Module 1: Project Setup & Financial Structure</p>
+                    </div>
+
+                    {/* Navigation */}
+                    <div className="bg-white shadow-sm border-b">
+                        <div className="container mx-auto px-6">
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setActiveModule('overview')}
+                                    className={`px-6 py-4 font-semibold transition ${
+                                        activeModule === 'overview' ? 'tab-active' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Overview
+                                </button>
+                                <button
+                                    onClick={() => setActiveModule('module1')}
+                                    className={`px-6 py-4 font-semibold transition ${
+                                        activeModule === 'module1' ? 'tab-active' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Module 1
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Module 1 Content */}
+                    {activeModule === 'overview' && (
+                        <div className="container mx-auto px-6 py-6">
+                            {/* Project Overview Dashboard */}
+                            <div className="module-card p-8 mb-6">
+                                <h2 className="text-3xl font-bold mb-6 text-gray-800">Project Overview</h2>
+                                
+                                <div className="grid grid-cols-3 gap-6 mb-8">
+                                    <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                                        <div className="text-sm text-blue-600 font-medium mb-2">Project Name</div>
+                                        <div className="text-2xl font-bold text-gray-800">{projectName}</div>
+                                        <div className="text-sm text-gray-600 mt-1">{projectType.charAt(0).toUpperCase() + projectType.slice(1)}</div>
+                                    </div>
+                                    
+                                    <div className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+                                        <div className="text-sm text-green-600 font-medium mb-2">Total Land Area</div>
+                                        <div className="text-2xl font-bold text-gray-800">{formatNumber(totalLandArea)} sqm</div>
+                                        <div className="text-sm text-gray-600 mt-1">Value: ${formatNumber(totalLandValue)}</div>
+                                    </div>
+                                    
+                                    <div className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+                                        <div className="text-sm text-purple-600 font-medium mb-2">Project Duration</div>
+                                        <div className="text-2xl font-bold text-gray-800">
+                                            {constructionPeriods + operationsPeriods} {modelType === 'monthly' ? 'Months' : 'Years'}
+                                        </div>
+                                        <div className="text-sm text-gray-600 mt-1">
+                                            Construction: {constructionPeriods} | Operations: {operationsPeriods}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-700 mb-4">Land Acquisition</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between p-3 bg-green-50 rounded">
+                                                <span className="text-gray-700">Cash Purchase ({cashPercent}%)</span>
+                                                <span className="font-bold text-green-700">${formatNumber(cashValue)}</span>
+                                            </div>
+                                            <div className="flex justify-between p-3 bg-blue-50 rounded">
+                                                <span className="text-gray-700">In-Kind Contribution ({inKindPercent}%)</span>
+                                                <span className="font-bold text-blue-700">${formatNumber(inKindValue)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-700 mb-4">Area Allocation</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between p-3 bg-blue-50 rounded">
+                                                <span className="text-gray-700">Residential ({residentialPercent}%)</span>
+                                                <span className="font-bold text-blue-700">{formatNumber(residentialTotalArea)} sqm</span>
+                                            </div>
+                                            <div className="flex justify-between p-3 bg-green-50 rounded">
+                                                <span className="text-gray-700">Hospitality ({hospitalityPercent}%)</span>
+                                                <span className="font-bold text-green-700">{formatNumber(hospitalityTotalArea)} sqm</span>
+                                            </div>
+                                            <div className="flex justify-between p-3 bg-purple-50 rounded">
+                                                <span className="text-gray-700">Retail ({retailPercent}%)</span>
+                                                <span className="font-bold text-purple-700">{formatNumber(retailTotalArea)} sqm</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Module Navigation Cards */}
+                            <h2 className="text-2xl font-bold mb-4 text-gray-800">Financial Modeling Modules</h2>
+                            <div className="grid grid-cols-3 gap-6">
+                                {/* Module 1 - Active */}
+                                <div className="module-card p-6 cursor-pointer border-2 border-purple-500" onClick={() => {
+                                    setActiveModule('module1');
+                                    setActiveTab('timeline');
+                                }}>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-xl font-bold text-gray-800">Module 1</h3>
+                                        <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">ACTIVE</span>
+                                    </div>
+                                    <p className="text-gray-600 mb-4">Project Setup & Financial Structure</p>
+                                    <ul className="text-sm text-gray-600 space-y-2">
+                                        <li>✓ Project Details & Timeline</li>
+                                        <li>✓ Land & Area Allocation</li>
+                                        <li>✓ Development Costs</li>
+                                        <li>✓ Financing Structure</li>
+                                    </ul>
+                                    <button className="mt-4 w-full btn-primary text-white px-4 py-2 rounded-lg font-medium">
+                                        Open Module
+                                    </button>
+                                </div>
+
+                                {/* Module 2 - Coming Soon */}
+                                <div className="module-card p-6 opacity-60 cursor-not-allowed">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-xl font-bold text-gray-800">Module 2</h3>
+                                        <span className="px-3 py-1 bg-gray-400 text-white text-xs font-bold rounded-full">COMING SOON</span>
+                                    </div>
+                                    <p className="text-gray-600 mb-4">Revenue & Sales Projections</p>
+                                    <ul className="text-sm text-gray-500 space-y-2">
+                                        <li>• Unit Mix & Pricing</li>
+                                        <li>• Sales Schedule</li>
+                                        <li>• Revenue Recognition</li>
+                                        <li>• Hospitality Revenue</li>
+                                    </ul>
+                                    <button className="mt-4 w-full bg-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
+                                        Coming Soon
+                                    </button>
+                                </div>
+
+                                {/* Module 3 - Coming Soon */}
+                                <div className="module-card p-6 opacity-60 cursor-not-allowed">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-xl font-bold text-gray-800">Module 3</h3>
+                                        <span className="px-3 py-1 bg-gray-400 text-white text-xs font-bold rounded-full">COMING SOON</span>
+                                    </div>
+                                    <p className="text-gray-600 mb-4">Operating Expenses & Cash Flow</p>
+                                    <ul className="text-sm text-gray-500 space-y-2">
+                                        <li>• OPEX Schedule</li>
+                                        <li>• Property Management</li>
+                                        <li>• Cash Flow Analysis</li>
+                                        <li>• Working Capital</li>
+                                    </ul>
+                                    <button className="mt-4 w-full bg-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
+                                        Coming Soon
+                                    </button>
+                                </div>
+
+                                {/* Module 4 - Coming Soon */}
+                                <div className="module-card p-6 opacity-60 cursor-not-allowed">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-xl font-bold text-gray-800">Module 4</h3>
+                                        <span className="px-3 py-1 bg-gray-400 text-white text-xs font-bold rounded-full">COMING SOON</span>
+                                    </div>
+                                    <p className="text-gray-600 mb-4">Returns & Valuation Analysis</p>
+                                    <ul className="text-sm text-gray-500 space-y-2">
+                                        <li>• IRR Calculation</li>
+                                        <li>• NPV Analysis</li>
+                                        <li>• Exit Valuation</li>
+                                        <li>• Sensitivity Analysis</li>
+                                    </ul>
+                                    <button className="mt-4 w-full bg-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
+                                        Coming Soon
+                                    </button>
+                                </div>
+
+                                {/* Module 5 - Coming Soon */}
+                                <div className="module-card p-6 opacity-60 cursor-not-allowed">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-xl font-bold text-gray-800">Module 5</h3>
+                                        <span className="px-3 py-1 bg-gray-400 text-white text-xs font-bold rounded-full">COMING SOON</span>
+                                    </div>
+                                    <p className="text-gray-600 mb-4">Financial Statements</p>
+                                    <ul className="text-sm text-gray-500 space-y-2">
+                                        <li>• Income Statement</li>
+                                        <li>• Balance Sheet</li>
+                                        <li>• Cash Flow Statement</li>
+                                        <li>• Financial Ratios</li>
+                                    </ul>
+                                    <button className="mt-4 w-full bg-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
+                                        Coming Soon
+                                    </button>
+                                </div>
+
+                                {/* Module 6 - Coming Soon */}
+                                <div className="module-card p-6 opacity-60 cursor-not-allowed">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-xl font-bold text-gray-800">Module 6</h3>
+                                        <span className="px-3 py-1 bg-gray-400 text-white text-xs font-bold rounded-full">COMING SOON</span>
+                                    </div>
+                                    <p className="text-gray-600 mb-4">Reports & Visualizations</p>
+                                    <ul className="text-sm text-gray-500 space-y-2">
+                                        <li>• Executive Summary</li>
+                                        <li>• Charts & Graphs</li>
+                                        <li>• Export to PDF/Excel</li>
+                                        <li>• Investor Presentations</li>
+                                    </ul>
+                                    <button className="mt-4 w-full bg-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
+                                        Coming Soon
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Module 1 Detailed View */}
+                    {activeModule === 'module1' && (
+                        <div className="container mx-auto px-6 py-6">
+                            {/* Sub Navigation */}
+                            <div className="sticky-nav bg-white rounded-lg shadow-sm p-2 mb-6 flex gap-2">
+                                <button
+                                    onClick={() => setActiveTab('timeline')}
+                                    className={`px-4 py-2 rounded font-medium transition ${
+                                        activeTab === 'timeline' ? 'bg-purple-600 text-white' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Project Details & Timeline
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('area')}
+                                    className={`px-4 py-2 rounded font-medium transition ${
+                                        activeTab === 'area' ? 'bg-purple-600 text-white' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Land & Area
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('costs')}
+                                    className={`px-4 py-2 rounded font-medium transition ${
+                                        activeTab === 'costs' ? 'bg-purple-600 text-white' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Development Costs
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('financing')}
+                                    className={`px-4 py-2 rounded font-medium transition ${
+                                        activeTab === 'financing' ? 'bg-purple-600 text-white' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Financing
+                                </button>
+                            </div>
+
+                            <div>
+                                {/* Timeline Tab */}
+                                {activeTab === 'timeline' && (
+                                    <div className="module-card p-6">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Project Details & Timeline</h3>
+                                        
+                                        <div className="grid grid-cols-2 gap-6 mb-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={projectName}
+                                                    onChange={(e) => setProjectName(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Project Type</label>
+                                                <select
+                                                    value={projectType}
+                                                    onChange={(e) => setProjectType(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                >
+                                                    <option value="residential">Residential</option>
+                                                    <option value="hospitality">Hospitality</option>
+                                                    <option value="mixed-use">Mixed-Use</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                                                <input
+                                                    type="text"
+                                                    value={country}
+                                                    onChange={(e) => setCountry(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                    placeholder="e.g., United States, UAE, UK"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+                                                <select
+                                                    value={currency}
+                                                    onChange={(e) => setCurrency(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                >
+                                                    <option value="USD">USD - US Dollar</option>
+                                                    <option value="AED">AED - UAE Dirham</option>
+                                                    <option value="EUR">EUR - Euro</option>
+                                                    <option value="GBP">GBP - British Pound</option>
+                                                    <option value="SAR">SAR - Saudi Riyal</option>
+                                                    <option value="PKR">PKR - Pakistani Rupee</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Model Type</label>
+                                                <select
+                                                    value={modelType}
+                                                    onChange={(e) => handleModelTypeChange(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                >
+                                                    <option value="monthly">Monthly</option>
+                                                    <option value="annual">Annual</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Project Start Date</label>
+                                                <input
+                                                    type="date"
+                                                    value={projectStart}
+                                                    onChange={(e) => setProjectStart(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Construction Periods ({modelType === 'monthly' ? 'Months' : 'Years'})
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={constructionPeriods}
+                                                    onChange={(e) => setConstructionPeriods(parseInt(e.target.value) || 0)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Operations Periods ({modelType === 'monthly' ? 'Months' : 'Years'})
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={operationsPeriods}
+                                                    onChange={(e) => setOperationsPeriods(parseInt(e.target.value) || 0)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Results Display */}
+                                        <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg border border-purple-200">
+                                            <h4 className="font-bold text-gray-800 mb-4">Project Timeline Summary</h4>
+                                            <div className="grid grid-cols-3 gap-6">
+                                                <div>
+                                                    <div className="text-sm text-gray-600 mb-1">Total Project Duration</div>
+                                                    <div className="text-2xl font-bold text-purple-700">
+                                                        {constructionPeriods + operationsPeriods} {modelType === 'monthly' ? 'Months' : 'Years'}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 mt-1">
+                                                        Construction: {constructionPeriods} | Operations: {operationsPeriods}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm text-gray-600 mb-1">Project End Date</div>
+                                                    <div className="text-2xl font-bold text-blue-700">
+                                                        {new Date(projectEndDate).toLocaleDateString('en-US', { 
+                                                            month: 'short', 
+                                                            day: 'numeric', 
+                                                            year: 'numeric' 
+                                                        })}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 mt-1">
+                                                        From: {new Date(projectStart).toLocaleDateString('en-US', { 
+                                                            month: 'short', 
+                                                            year: 'numeric' 
+                                                        })}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm text-gray-600 mb-1">Total Project Period</div>
+                                                    <div className="text-2xl font-bold text-green-700">
+                                                        {totalProjectYears} Years
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 mt-1">
+                                                        Model: {modelType === 'monthly' ? 'Monthly' : 'Annual'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Area Tab - With detailed calculations and validation */}
+                                {activeTab === 'area' && (
+                                    <div className="module-card p-6">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Land & Area Allocation</h3>
+                                        
+                                        {/* Land Acquisition Section */}
+                                        <div className="mb-8">
+                                            <h4 className="text-lg font-bold text-gray-700 mb-4">Land Acquisition</h4>
+                                            <div className="grid grid-cols-4 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Total Land Area (sqm)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={totalLandArea}
+                                                        onChange={(e) => setTotalLandArea(parseFloat(e.target.value) || 0)}
+                                                        className="input-assumption w-full px-4 py-2 border rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Land Value (per sqm)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={landValuePerSqm}
+                                                        onChange={(e) => setLandValuePerSqm(parseFloat(e.target.value) || 0)}
+                                                        className="input-assumption w-full px-4 py-2 border rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Cash %</label>
+                                                    <input
+                                                        type="number"
+                                                        value={cashPercent}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value) || 0;
+                                                            setCashPercent(val);
+                                                            setInKindPercent(100 - val);
+                                                        }}
+                                                        className="input-assumption w-full px-4 py-2 border rounded-lg"
+                                                        min="0"
+                                                        max="100"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">In-Kind %</label>
+                                                    <input
+                                                        type="number"
+                                                        value={inKindPercent}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value) || 0;
+                                                            setInKindPercent(val);
+                                                            setCashPercent(100 - val);
+                                                        }}
+                                                        className="input-assumption w-full px-4 py-2 border rounded-lg"
+                                                        min="0"
+                                                        max="100"
+                                                    />
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Land Value Summary Table */}
+                                            <div className="mt-4">
+                                                <table className="w-full text-sm">
+                                                    <thead>
+                                                        <tr className="bg-gray-700 text-white">
+                                                            <th className="p-2 text-left">Description</th>
+                                                            <th className="p-2 text-right">Value ({currency})</th>
+                                                            <th className="p-2 text-left">Calculation</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr className="bg-white">
+                                                            <td className="p-2 border">Total Land Value</td>
+                                                            <td className="p-2 border text-right font-bold">{formatNumber(totalLandValue)}</td>
+                                                            <td className="p-2 border">{formatNumber(totalLandArea)} sqm × {currency} {formatNumber(landValuePerSqm)}/sqm</td>
+                                                        </tr>
+                                                        <tr className="bg-green-50">
+                                                            <td className="p-2 border">Cash Purchase</td>
+                                                            <td className="p-2 border text-right font-bold text-green-700">{formatNumber(cashValue)}</td>
+                                                            <td className="p-2 border">{formatNumber(totalLandValue)} × {cashPercent}%</td>
+                                                        </tr>
+                                                        <tr className="bg-blue-50">
+                                                            <td className="p-2 border">In-Kind Contribution</td>
+                                                            <td className="p-2 border text-right font-bold text-blue-700">{formatNumber(inKindValue)}</td>
+                                                            <td className="p-2 border">{formatNumber(totalLandValue)} × {inKindPercent}%</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        {/* Area Allocation by Asset */}
+                                        <div className="mb-6">
+                                            <h4 className="text-lg font-bold text-gray-700 mb-4">Area Allocation by Asset</h4>
+                                            
+                                            <div className="grid grid-cols-3 gap-4 mb-4">
+                                                {showResidential && (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">Residential %</label>
+                                                        <input
+                                                            type="number"
+                                                            value={residentialPercent}
+                                                            onChange={(e) => setResidentialPercent(parseFloat(e.target.value) || 0)}
+                                                            className="input-assumption w-full px-4 py-2 border rounded-lg"
+                                                        />
+                                                    </div>
+                                                )}
+                                                {showHospitality && (
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">Hospitality %</label>
+                                                        <input
+                                                            type="number"
+                                                            value={hospitalityPercent}
+                                                            onChange={(e) => setHospitalityPercent(parseFloat(e.target.value) || 0)}
+                                                            className="input-assumption w-full px-4 py-2 border rounded-lg"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Retail %</label>
+                                                    <input
+                                                        type="number"
+                                                        value={retailPercent}
+                                                        onChange={(e) => setRetailPercent(parseFloat(e.target.value) || 0)}
+                                                        className="input-assumption w-full px-4 py-2 border rounded-lg"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Validation Warning */}
+                                            <div className={`p-3 rounded-lg mb-4 ${areaAllocationValid ? 'bg-green-50 border border-green-300' : 'bg-red-50 border border-red-300'}`}>
+                                                <div className="flex items-center justify-between">
+                                                    <span className={`font-medium ${areaAllocationValid ? 'text-green-700' : 'text-red-700'}`}>
+                                                        Total Allocation: {totalAreaPercent.toFixed(1)}%
+                                                    </span>
+                                                    {areaAllocationValid ? (
+                                                        <span className="text-green-700 font-bold">✓ Valid (100%)</span>
+                                                    ) : (
+                                                        <span className="text-red-700 font-bold">
+                                                            ⚠ Error: Must equal 100% (Currently {totalAreaPercent > 100 ? 'over' : 'under'} by {Math.abs(100 - totalAreaPercent).toFixed(1)}%)
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Residential Breakdown */}
+                                        {showResidential && (
+                                            <div className="mb-6">
+                                                <h4 className="text-lg font-bold text-gray-700 mb-3">Residential - Area Breakdown</h4>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead>
+                                                            <tr className="bg-gray-700 text-white">
+                                                                <th className="p-2 text-left">Metric</th>
+                                                                <th className="p-2 text-center">Input</th>
+                                                                <th className="p-2 text-right">Value (sqm)</th>
+                                                                <th className="p-2 text-left">Calculation</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr className="bg-blue-50">
+                                                                <td className="p-2 border font-medium">Total Allocated Area</td>
+                                                                <td className="p-2 border text-center">-</td>
+                                                                <td className="p-2 border text-right font-bold">{formatNumber(residentialTotalArea)}</td>
+                                                                <td className="p-2 border">{formatNumber(totalLandArea)} sqm × {residentialPercent}%</td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Roads/Open Area</td>
+                                                                <td className="p-2 border text-center">
+                                                                    <input
+                                                                        type="number"
+                                                                        value={residentialRoadsPercent}
+                                                                        onChange={(e) => setResidentialRoadsPercent(parseFloat(e.target.value) || 0)}
+                                                                        className="input-assumption w-16 px-2 py-1 border rounded text-center"
+                                                                        min="0"
+                                                                        max="100"
+                                                                    /> %
+                                                                </td>
+                                                                <td className="p-2 border text-right">{formatNumber(residentialRoadsArea)}</td>
+                                                                <td className="p-2 border">{formatNumber(residentialTotalArea)} sqm × {residentialRoadsPercent}%</td>
+                                                            </tr>
+                                                            <tr className="bg-green-100">
+                                                                <td className="p-2 border font-bold">Net Developable Area</td>
+                                                                <td className="p-2 border text-center">-</td>
+                                                                <td className="p-2 border text-right font-bold text-green-700">{formatNumber(residentialNetArea)}</td>
+                                                                <td className="p-2 border">{formatNumber(residentialTotalArea)} - {formatNumber(residentialRoadsArea)}</td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">GFA (Gross Floor Area)</td>
+                                                                <td className="p-2 border text-center">
+                                                                    FAR: <input
+                                                                        type="number"
+                                                                        value={residentialFAR}
+                                                                        onChange={(e) => setResidentialFAR(parseFloat(e.target.value) || 0)}
+                                                                        className="input-assumption w-16 px-2 py-1 border rounded text-center"
+                                                                        step="0.1"
+                                                                        min="0"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-2 border text-right font-bold">{formatNumber(residentialGFA)}</td>
+                                                                <td className="p-2 border">{formatNumber(residentialNetArea)} sqm × {residentialFAR}</td>
+                                                            </tr>
+                                                            <tr className="bg-blue-100">
+                                                                <td className="p-2 border font-bold">BUA (Built-Up Area)</td>
+                                                                <td className="p-2 border text-center">
+                                                                    Eff: <input
+                                                                        type="number"
+                                                                        value={(residentialEfficiency * 100).toFixed(0)}
+                                                                        onChange={(e) => setResidentialEfficiency(parseFloat(e.target.value) / 100 || 0)}
+                                                                        className="input-assumption w-16 px-2 py-1 border rounded text-center"
+                                                                        min="0"
+                                                                        max="100"
+                                                                    /> %
+                                                                </td>
+                                                                <td className="p-2 border text-right font-bold text-blue-700">{formatNumber(residentialBUA)}</td>
+                                                                <td className="p-2 border">{formatNumber(residentialGFA)} sqm × {(residentialEfficiency * 100).toFixed(0)}%</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Hospitality Breakdown */}
+                                        {showHospitality && (
+                                            <div className="mb-6">
+                                                <h4 className="text-lg font-bold text-gray-700 mb-3">Hospitality - Area Breakdown</h4>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead>
+                                                            <tr className="bg-gray-700 text-white">
+                                                                <th className="p-2 text-left">Metric</th>
+                                                                <th className="p-2 text-center">Input</th>
+                                                                <th className="p-2 text-right">Value (sqm)</th>
+                                                                <th className="p-2 text-left">Calculation</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr className="bg-green-50">
+                                                                <td className="p-2 border font-medium">Total Allocated Area</td>
+                                                                <td className="p-2 border text-center">-</td>
+                                                                <td className="p-2 border text-right font-bold">{formatNumber(hospitalityTotalArea)}</td>
+                                                                <td className="p-2 border">{formatNumber(totalLandArea)} sqm × {hospitalityPercent}%</td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Roads/Open Area</td>
+                                                                <td className="p-2 border text-center">
+                                                                    <input
+                                                                        type="number"
+                                                                        value={hospitalityRoadsPercent}
+                                                                        onChange={(e) => setHospitalityRoadsPercent(parseFloat(e.target.value) || 0)}
+                                                                        className="input-assumption w-16 px-2 py-1 border rounded text-center"
+                                                                        min="0"
+                                                                        max="100"
+                                                                    /> %
+                                                                </td>
+                                                                <td className="p-2 border text-right">{formatNumber(hospitalityRoadsArea)}</td>
+                                                                <td className="p-2 border">{formatNumber(hospitalityTotalArea)} sqm × {hospitalityRoadsPercent}%</td>
+                                                            </tr>
+                                                            <tr className="bg-green-100">
+                                                                <td className="p-2 border font-bold">Net Developable Area</td>
+                                                                <td className="p-2 border text-center">-</td>
+                                                                <td className="p-2 border text-right font-bold text-green-700">{formatNumber(hospitalityNetArea)}</td>
+                                                                <td className="p-2 border">{formatNumber(hospitalityTotalArea)} - {formatNumber(hospitalityRoadsArea)}</td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">GFA (Gross Floor Area)</td>
+                                                                <td className="p-2 border text-center">
+                                                                    FAR: <input
+                                                                        type="number"
+                                                                        value={hospitalityFAR}
+                                                                        onChange={(e) => setHospitalityFAR(parseFloat(e.target.value) || 0)}
+                                                                        className="input-assumption w-16 px-2 py-1 border rounded text-center"
+                                                                        step="0.1"
+                                                                        min="0"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-2 border text-right font-bold">{formatNumber(hospitalityGFA)}</td>
+                                                                <td className="p-2 border">{formatNumber(hospitalityNetArea)} sqm × {hospitalityFAR}</td>
+                                                            </tr>
+                                                            <tr className="bg-green-100">
+                                                                <td className="p-2 border font-bold">BUA (Built-Up Area)</td>
+                                                                <td className="p-2 border text-center">
+                                                                    Eff: <input
+                                                                        type="number"
+                                                                        value={(hospitalityEfficiency * 100).toFixed(0)}
+                                                                        onChange={(e) => setHospitalityEfficiency(parseFloat(e.target.value) / 100 || 0)}
+                                                                        className="input-assumption w-16 px-2 py-1 border rounded text-center"
+                                                                        min="0"
+                                                                        max="100"
+                                                                    /> %
+                                                                </td>
+                                                                <td className="p-2 border text-right font-bold text-green-700">{formatNumber(hospitalityBUA)}</td>
+                                                                <td className="p-2 border">{formatNumber(hospitalityGFA)} sqm × {(hospitalityEfficiency * 100).toFixed(0)}%</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Retail Breakdown */}
+                                        <div className="mb-6">
+                                            <h4 className="text-lg font-bold text-gray-700 mb-3">Retail - Area Breakdown</h4>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-sm">
+                                                    <thead>
+                                                        <tr className="bg-gray-700 text-white">
+                                                            <th className="p-2 text-left">Metric</th>
+                                                            <th className="p-2 text-center">Input</th>
+                                                            <th className="p-2 text-right">Value (sqm)</th>
+                                                            <th className="p-2 text-left">Calculation</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr className="bg-purple-50">
+                                                            <td className="p-2 border font-medium">Total Allocated Area</td>
+                                                            <td className="p-2 border text-center">-</td>
+                                                            <td className="p-2 border text-right font-bold">{formatNumber(retailTotalArea)}</td>
+                                                            <td className="p-2 border">{formatNumber(totalLandArea)} sqm × {retailPercent}%</td>
+                                                        </tr>
+                                                        <tr className="bg-white">
+                                                            <td className="p-2 border">Roads/Open Area</td>
+                                                            <td className="p-2 border text-center">
+                                                                <input
+                                                                    type="number"
+                                                                    value={retailRoadsPercent}
+                                                                    onChange={(e) => setRetailRoadsPercent(parseFloat(e.target.value) || 0)}
+                                                                    className="input-assumption w-16 px-2 py-1 border rounded text-center"
+                                                                    min="0"
+                                                                    max="100"
+                                                                /> %
+                                                            </td>
+                                                            <td className="p-2 border text-right">{formatNumber(retailRoadsArea)}</td>
+                                                            <td className="p-2 border">{formatNumber(retailTotalArea)} sqm × {retailRoadsPercent}%</td>
+                                                        </tr>
+                                                        <tr className="bg-purple-100">
+                                                            <td className="p-2 border font-bold">Net Developable Area</td>
+                                                            <td className="p-2 border text-center">-</td>
+                                                            <td className="p-2 border text-right font-bold text-purple-700">{formatNumber(retailNetArea)}</td>
+                                                            <td className="p-2 border">{formatNumber(retailTotalArea)} - {formatNumber(retailRoadsArea)}</td>
+                                                        </tr>
+                                                        <tr className="bg-white">
+                                                            <td className="p-2 border">GFA (Gross Floor Area)</td>
+                                                            <td className="p-2 border text-center">
+                                                                FAR: <input
+                                                                    type="number"
+                                                                    value={retailFAR}
+                                                                    onChange={(e) => setRetailFAR(parseFloat(e.target.value) || 0)}
+                                                                    className="input-assumption w-16 px-2 py-1 border rounded text-center"
+                                                                    step="0.1"
+                                                                    min="0"
+                                                                />
+                                                            </td>
+                                                            <td className="p-2 border text-right font-bold">{formatNumber(retailGFA)}</td>
+                                                            <td className="p-2 border">{formatNumber(retailNetArea)} sqm × {retailFAR}</td>
+                                                        </tr>
+                                                        <tr className="bg-purple-100">
+                                                            <td className="p-2 border font-bold">BUA (Built-Up Area)</td>
+                                                            <td className="p-2 border text-center">
+                                                                Eff: <input
+                                                                    type="number"
+                                                                    value={(retailEfficiency * 100).toFixed(0)}
+                                                                    onChange={(e) => setRetailEfficiency(parseFloat(e.target.value) / 100 || 0)}
+                                                                    className="input-assumption w-16 px-2 py-1 border rounded text-center"
+                                                                    min="0"
+                                                                    max="100"
+                                                                /> %
+                                                            </td>
+                                                            <td className="p-2 border text-right font-bold text-purple-700">{formatNumber(retailBUA)}</td>
+                                                            <td className="p-2 border">{formatNumber(retailGFA)} sqm × {(retailEfficiency * 100).toFixed(0)}%</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Development Costs Tab */}
+                                {activeTab === 'costs' && (
+                                    <div className="module-card p-6">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Development Costs - Simple Summary</h3>
+                                        
+                                        <div className="space-y-6">
+                                            {/* Residential Summary */}
+                                            <div className="p-4 bg-blue-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Residential</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>Land (Cash Portion):</span>
+                                                        <span className="font-bold">${formatNumber(residentialLandValue * (cashPercent / 100))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Infrastructure ({formatNumber(residentialNetArea)} sqm × $500):</span>
+                                                        <span className="font-bold">${formatNumber(residentialNetArea * 500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Construction ({formatNumber(residentialBUA)} sqm × $1,500):</span>
+                                                        <span className="font-bold">${formatNumber(residentialBUA * 1500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-t pt-2 mt-2">
+                                                        <span className="font-bold">Total CAPEX:</span>
+                                                        <span className="font-bold text-blue-600 text-lg">
+                                                            ${formatNumber((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500))}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Hospitality Summary */}
+                                            <div className="p-4 bg-green-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Hospitality</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>Land (Cash Portion):</span>
+                                                        <span className="font-bold">${formatNumber(hospitalityLandValue * (cashPercent / 100))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Infrastructure ({formatNumber(hospitalityNetArea)} sqm × $500):</span>
+                                                        <span className="font-bold">${formatNumber(hospitalityNetArea * 500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Construction ({formatNumber(hospitalityBUA)} sqm × $1,500):</span>
+                                                        <span className="font-bold">${formatNumber(hospitalityBUA * 1500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-t pt-2 mt-2">
+                                                        <span className="font-bold">Total CAPEX:</span>
+                                                        <span className="font-bold text-green-600 text-lg">
+                                                            ${formatNumber((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500))}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Retail Summary */}
+                                            <div className="p-4 bg-purple-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Retail</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>Land (Cash Portion):</span>
+                                                        <span className="font-bold">${formatNumber(retailLandValue * (cashPercent / 100))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Infrastructure ({formatNumber(retailNetArea)} sqm × $500):</span>
+                                                        <span className="font-bold">${formatNumber(retailNetArea * 500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Construction ({formatNumber(retailBUA)} sqm × $1,500):</span>
+                                                        <span className="font-bold">${formatNumber(retailBUA * 1500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-t pt-2 mt-2">
+                                                        <span className="font-bold">Total CAPEX:</span>
+                                                        <span className="font-bold text-purple-600 text-lg">
+                                                            ${formatNumber((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500))}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Grand Total */}
+                                            <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="font-bold text-xl">TOTAL PROJECT CAPEX:</span>
+                                                    <span className="font-bold text-3xl">
+                                                        ${formatNumber(
+                                                            (residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500) +
+                                                            (hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500) +
+                                                            (retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500)
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Financing Tab */}
+                                {activeTab === 'financing' && (
+                                    <div className="module-card p-6">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Financing Structure - Summary</h3>
+                                        
+                                        <div className="mb-6 p-4 bg-gray-100 rounded-lg">
+                                            <h4 className="font-bold mb-3">Debt & Equity Settings</h4>
+                                            <div className="grid grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Interest Rate (%)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={interestRate}
+                                                        onChange={(e) => setInterestRate(parseFloat(e.target.value) || 0)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded"
+                                                        step="0.1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Debt %</label>
+                                                    <div className="px-3 py-2 bg-white border border-gray-300 rounded font-bold">60%</div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Equity %</label>
+                                                    <div className="px-3 py-2 bg-white border border-gray-300 rounded font-bold">40%</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            {/* Residential Financing */}
+                                            <div className="p-4 bg-blue-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Residential</h4>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead>
+                                                            <tr className="bg-gray-700 text-white">
+                                                                <th className="p-2 text-left">Description</th>
+                                                                <th className="p-2 text-right">Total</th>
+                                                                <th className="p-2 text-right">Equity (40%)</th>
+                                                                <th className="p-2 text-right">Debt (60%)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Land</td>
+                                                                <td className="p-2 border text-right">${formatNumber(residentialLandValue * (cashPercent / 100))}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((residentialLandValue * (cashPercent / 100)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((residentialLandValue * (cashPercent / 100)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-gray-50">
+                                                                <td className="p-2 border">Infrastructure</td>
+                                                                <td className="p-2 border text-right">${formatNumber(residentialNetArea * 500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((residentialNetArea * 500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((residentialNetArea * 500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Construction</td>
+                                                                <td className="p-2 border text-right">${formatNumber(residentialBUA * 1500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((residentialBUA * 1500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((residentialBUA * 1500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-blue-600 text-white font-bold">
+                                                                <td className="p-3">TOTAL</td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500))}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            {/* Hospitality Financing */}
+                                            <div className="p-4 bg-green-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Hospitality</h4>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead>
+                                                            <tr className="bg-gray-700 text-white">
+                                                                <th className="p-2 text-left">Description</th>
+                                                                <th className="p-2 text-right">Total</th>
+                                                                <th className="p-2 text-right">Equity (40%)</th>
+                                                                <th className="p-2 text-right">Debt (60%)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Land</td>
+                                                                <td className="p-2 border text-right">${formatNumber(hospitalityLandValue * (cashPercent / 100))}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((hospitalityLandValue * (cashPercent / 100)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((hospitalityLandValue * (cashPercent / 100)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-gray-50">
+                                                                <td className="p-2 border">Infrastructure</td>
+                                                                <td className="p-2 border text-right">${formatNumber(hospitalityNetArea * 500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((hospitalityNetArea * 500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((hospitalityNetArea * 500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Construction</td>
+                                                                <td className="p-2 border text-right">${formatNumber(hospitalityBUA * 1500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((hospitalityBUA * 1500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((hospitalityBUA * 1500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-green-600 text-white font-bold">
+                                                                <td className="p-3">TOTAL</td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500))}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            {/* Retail Financing */}
+                                            <div className="p-4 bg-purple-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Retail</h4>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead>
+                                                            <tr className="bg-gray-700 text-white">
+                                                                <th className="p-2 text-left">Description</th>
+                                                                <th className="p-2 text-right">Total</th>
+                                                                <th className="p-2 text-right">Equity (40%)</th>
+                                                                <th className="p-2 text-right">Debt (60%)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Land</td>
+                                                                <td className="p-2 border text-right">${formatNumber(retailLandValue * (cashPercent / 100))}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((retailLandValue * (cashPercent / 100)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((retailLandValue * (cashPercent / 100)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-gray-50">
+                                                                <td className="p-2 border">Infrastructure</td>
+                                                                <td className="p-2 border text-right">${formatNumber(retailNetArea * 500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((retailNetArea * 500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((retailNetArea * 500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Construction</td>
+                                                                <td className="p-2 border text-right">${formatNumber(retailBUA * 1500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((retailBUA * 1500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((retailBUA * 1500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-purple-600 text-white font-bold">
+                                                                <td className="p-3">TOTAL</td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500))}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<RealEstatePlatform />, document.getElementById('root'));
+    </script>
+</body>
+</html>
