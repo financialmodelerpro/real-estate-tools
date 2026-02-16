@@ -184,16 +184,19 @@
             const [residentialEfficiency, setResidentialEfficiency] = useState(0.85);
             const [residentialGFABase, setResidentialGFABase] = useState('netDevelopable');
             const [residentialBUABase, setResidentialBUABase] = useState('gfa');
+            const [residentialCustomRows, setResidentialCustomRows] = useState([]);
             
             const [hospitalityFAR, setHospitalityFAR] = useState(1.2);
             const [hospitalityEfficiency, setHospitalityEfficiency] = useState(0.80);
             const [hospitalityGFABase, setHospitalityGFABase] = useState('netDevelopable');
             const [hospitalityBUABase, setHospitalityBUABase] = useState('gfa');
+            const [hospitalityCustomRows, setHospitalityCustomRows] = useState([]);
             
             const [retailFAR, setRetailFAR] = useState(1.0);
             const [retailEfficiency, setRetailEfficiency] = useState(0.90);
             const [retailGFABase, setRetailGFABase] = useState('netDevelopable');
             const [retailBUABase, setRetailBUABase] = useState('gfa');
+            const [retailCustomRows, setRetailCustomRows] = useState([]);
             
             // Custom area metrics for each asset (editable/addable/deletable)
             const [residentialMetrics, setResidentialMetrics] = useState([
@@ -370,6 +373,51 @@
                 if (baseAreaKey === 'netDevelopable') return netArea;
                 if (baseAreaKey === 'gfa') return gfaArea;
                 return netArea;
+            };
+            
+            // Add custom row function
+            const addCustomRow = (sectionType) => {
+                const newRow = {
+                    id: Date.now(),
+                    name: 'Custom Metric',
+                    value: 0,
+                    baseArea: 'netDevelopable',
+                    multiplier: 1.0
+                };
+                
+                if (sectionType === 'residential') {
+                    setResidentialCustomRows([...residentialCustomRows, newRow]);
+                } else if (sectionType === 'hospitality') {
+                    setHospitalityCustomRows([...hospitalityCustomRows, newRow]);
+                } else if (sectionType === 'retail') {
+                    setRetailCustomRows([...retailCustomRows, newRow]);
+                }
+            };
+            
+            // Delete custom row function
+            const deleteCustomRow = (sectionType, rowId) => {
+                if (sectionType === 'residential') {
+                    setResidentialCustomRows(residentialCustomRows.filter(row => row.id !== rowId));
+                } else if (sectionType === 'hospitality') {
+                    setHospitalityCustomRows(hospitalityCustomRows.filter(row => row.id !== rowId));
+                } else if (sectionType === 'retail') {
+                    setRetailCustomRows(retailCustomRows.filter(row => row.id !== rowId));
+                }
+            };
+            
+            // Update custom row
+            const updateCustomRow = (sectionType, rowId, field, value) => {
+                const updateRows = (rows) => rows.map(row => 
+                    row.id === rowId ? { ...row, [field]: value } : row
+                );
+                
+                if (sectionType === 'residential') {
+                    setResidentialCustomRows(updateRows(residentialCustomRows));
+                } else if (sectionType === 'hospitality') {
+                    setHospitalityCustomRows(updateRows(hospitalityCustomRows));
+                } else if (sectionType === 'retail') {
+                    setRetailCustomRows(updateRows(retailCustomRows));
+                }
             };
 
             return (
@@ -1014,11 +1062,60 @@
                                                                 <td className="p-2 border">{getBaseAreaName(residentialBUABase)} × {(residentialEfficiency * 100).toFixed(0)}%</td>
                                                                 <td className="p-2 border text-center">-</td>
                                                             </tr>
+                                                            
+                                                            {/* Custom Rows */}
+                                                            {residentialCustomRows.map((customRow) => {
+                                                                const baseValue = getBaseAreaValue(customRow.baseArea, residentialTotalArea, residentialNetArea, residentialGFA);
+                                                                const calculatedValue = baseValue * customRow.multiplier;
+                                                                
+                                                                return (
+                                                                    <tr key={customRow.id} className="bg-yellow-50">
+                                                                        <td className="p-2 border">
+                                                                            <input
+                                                                                type="text"
+                                                                                value={customRow.name}
+                                                                                onChange={(e) => updateCustomRow('residential', customRow.id, 'name', e.target.value)}
+                                                                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                                                            />
+                                                                        </td>
+                                                                        <td className="p-2 border text-center">
+                                                                            <input
+                                                                                type="number"
+                                                                                value={customRow.multiplier}
+                                                                                onChange={(e) => updateCustomRow('residential', customRow.id, 'multiplier', parseFloat(e.target.value) || 0)}
+                                                                                className="input-assumption w-16 px-2 py-1 border rounded text-center"
+                                                                                step="0.1"
+                                                                            />
+                                                                        </td>
+                                                                        <td className="p-2 border text-center">
+                                                                            <select 
+                                                                                value={customRow.baseArea}
+                                                                                onChange={(e) => updateCustomRow('residential', customRow.id, 'baseArea', e.target.value)}
+                                                                                className="px-2 py-1 border border-gray-300 rounded text-xs w-full"
+                                                                            >
+                                                                                <option value="totalAllocated">Total Allocated Area</option>
+                                                                                <option value="netDevelopable">Net Developable Area</option>
+                                                                                <option value="gfa">GFA</option>
+                                                                            </select>
+                                                                        </td>
+                                                                        <td className="p-2 border text-right font-bold text-gray-900">{formatNumber(calculatedValue)}</td>
+                                                                        <td className="p-2 border">{getBaseAreaName(customRow.baseArea)} × {customRow.multiplier}</td>
+                                                                        <td className="p-2 border text-center">
+                                                                            <button 
+                                                                                onClick={() => deleteCustomRow('residential', customRow.id)}
+                                                                                className="text-red-600 hover:text-red-800 text-sm font-bold"
+                                                                            >
+                                                                                🗑️
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
                                                         </tbody>
                                                     </table>
                                                     <div className="mt-3">
                                                         <button 
-                                                            onClick={() => alert('Add row functionality - coming soon!')}
+                                                            onClick={() => addCustomRow('residential')}
                                                             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold"
                                                         >
                                                             + Add Row
@@ -1131,11 +1228,60 @@
                                                                 <td className="p-2 border">{getBaseAreaName(hospitalityBUABase)} × {(hospitalityEfficiency * 100).toFixed(0)}%</td>
                                                                 <td className="p-2 border text-center">-</td>
                                                             </tr>
+                                                            
+                                                            {/* Custom Rows */}
+                                                            {hospitalityCustomRows.map((customRow) => {
+                                                                const baseValue = getBaseAreaValue(customRow.baseArea, hospitalityTotalArea, hospitalityNetArea, hospitalityGFA);
+                                                                const calculatedValue = baseValue * customRow.multiplier;
+                                                                
+                                                                return (
+                                                                    <tr key={customRow.id} className="bg-yellow-50">
+                                                                        <td className="p-2 border">
+                                                                            <input
+                                                                                type="text"
+                                                                                value={customRow.name}
+                                                                                onChange={(e) => updateCustomRow('hospitality', customRow.id, 'name', e.target.value)}
+                                                                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                                                            />
+                                                                        </td>
+                                                                        <td className="p-2 border text-center">
+                                                                            <input
+                                                                                type="number"
+                                                                                value={customRow.multiplier}
+                                                                                onChange={(e) => updateCustomRow('hospitality', customRow.id, 'multiplier', parseFloat(e.target.value) || 0)}
+                                                                                className="input-assumption w-16 px-2 py-1 border rounded text-center"
+                                                                                step="0.1"
+                                                                            />
+                                                                        </td>
+                                                                        <td className="p-2 border text-center">
+                                                                            <select 
+                                                                                value={customRow.baseArea}
+                                                                                onChange={(e) => updateCustomRow('hospitality', customRow.id, 'baseArea', e.target.value)}
+                                                                                className="px-2 py-1 border border-gray-300 rounded text-xs w-full"
+                                                                            >
+                                                                                <option value="totalAllocated">Total Allocated Area</option>
+                                                                                <option value="netDevelopable">Net Developable Area</option>
+                                                                                <option value="gfa">GFA</option>
+                                                                            </select>
+                                                                        </td>
+                                                                        <td className="p-2 border text-right font-bold text-gray-900">{formatNumber(calculatedValue)}</td>
+                                                                        <td className="p-2 border">{getBaseAreaName(customRow.baseArea)} × {customRow.multiplier}</td>
+                                                                        <td className="p-2 border text-center">
+                                                                            <button 
+                                                                                onClick={() => deleteCustomRow('hospitality', customRow.id)}
+                                                                                className="text-red-600 hover:text-red-800 text-sm font-bold"
+                                                                            >
+                                                                                🗑️
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
                                                         </tbody>
                                                     </table>
                                                     <div className="mt-3">
                                                         <button 
-                                                            onClick={() => alert('Add row functionality - coming soon!')}
+                                                            onClick={() => addCustomRow('hospitality')}
                                                             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-semibold"
                                                         >
                                                             + Add Row
@@ -1247,11 +1393,60 @@
                                                             <td className="p-2 border">{getBaseAreaName(retailBUABase)} × {(retailEfficiency * 100).toFixed(0)}%</td>
                                                             <td className="p-2 border text-center">-</td>
                                                         </tr>
+                                                        
+                                                        {/* Custom Rows */}
+                                                        {retailCustomRows.map((customRow) => {
+                                                            const baseValue = getBaseAreaValue(customRow.baseArea, retailTotalArea, retailNetArea, retailGFA);
+                                                            const calculatedValue = baseValue * customRow.multiplier;
+                                                            
+                                                            return (
+                                                                <tr key={customRow.id} className="bg-yellow-50">
+                                                                    <td className="p-2 border">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={customRow.name}
+                                                                            onChange={(e) => updateCustomRow('retail', customRow.id, 'name', e.target.value)}
+                                                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                                                        />
+                                                                    </td>
+                                                                    <td className="p-2 border text-center">
+                                                                        <input
+                                                                            type="number"
+                                                                            value={customRow.multiplier}
+                                                                            onChange={(e) => updateCustomRow('retail', customRow.id, 'multiplier', parseFloat(e.target.value) || 0)}
+                                                                            className="input-assumption w-16 px-2 py-1 border rounded text-center"
+                                                                            step="0.1"
+                                                                        />
+                                                                    </td>
+                                                                    <td className="p-2 border text-center">
+                                                                        <select 
+                                                                            value={customRow.baseArea}
+                                                                            onChange={(e) => updateCustomRow('retail', customRow.id, 'baseArea', e.target.value)}
+                                                                            className="px-2 py-1 border border-gray-300 rounded text-xs w-full"
+                                                                        >
+                                                                            <option value="totalAllocated">Total Allocated Area</option>
+                                                                            <option value="netDevelopable">Net Developable Area</option>
+                                                                            <option value="gfa">GFA</option>
+                                                                        </select>
+                                                                    </td>
+                                                                    <td className="p-2 border text-right font-bold text-gray-900">{formatNumber(calculatedValue)}</td>
+                                                                    <td className="p-2 border">{getBaseAreaName(customRow.baseArea)} × {customRow.multiplier}</td>
+                                                                    <td className="p-2 border text-center">
+                                                                        <button 
+                                                                            onClick={() => deleteCustomRow('retail', customRow.id)}
+                                                                            className="text-red-600 hover:text-red-800 text-sm font-bold"
+                                                                        >
+                                                                            🗑️
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
                                                     </tbody>
                                                 </table>
                                                 <div className="mt-3">
                                                     <button 
-                                                        onClick={() => alert('Add row functionality - coming soon!')}
+                                                        onClick={() => addCustomRow('retail')}
                                                         className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded text-sm font-semibold"
                                                     >
                                                         + Add Row
