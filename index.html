@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Real Estate Financial Modeling Platform v1.1</title>
+    <title>Real Estate Financial Modeling Platform - Module 1 Complete</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -83,40 +80,6 @@
             background: #e0e7ff;
             font-weight: 700;
         }
-        .warning {
-            color: #dc2626;
-            font-weight: 600;
-        }
-        .success {
-            color: #16a34a;
-            font-weight: 600;
-        }
-        .tooltip {
-            position: relative;
-            display: inline-block;
-            cursor: help;
-        }
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 250px;
-            background-color: #1f2937;
-            color: #fff;
-            text-align: left;
-            border-radius: 6px;
-            padding: 8px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -125px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.75rem;
-        }
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
-            opacity: 1;
-        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -125,1308 +88,33 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // Development Costs Section Component
-        function DevelopmentCostsSection({ assetType, totalArea, netArea, gfa, bua, landCashPortion, constructionPeriods, modelType }) {
-            const [costItems, setCostItems] = useState([
-                {
-                    id: 1,
-                    name: 'Land (Cash Portion)',
-                    method: 'fixed',
-                    value: landCashPortion,
-                    baseType: '',
-                    phasing: [100],
-                    startPeriod: 0,
-                    endPeriod: 0,
-                    isLocked: true
-                },
-                {
-                    id: 2,
-                    name: 'Infrastructure Development',
-                    method: 'sqm_net',
-                    value: 500,
-                    baseType: '',
-                    phasing: [30, 40, 30],
-                    startPeriod: 1,
-                    endPeriod: 3,
-                    isLocked: false
-                },
-                {
-                    id: 3,
-                    name: 'Construction Cost',
-                    method: 'sqm_bua',
-                    value: 1500,
-                    baseType: '',
-                    phasing: [10, 20, 25, 25, 15, 5],
-                    startPeriod: 3,
-                    endPeriod: 8,
-                    isLocked: false
-                },
-                {
-                    id: 4,
-                    name: 'Professional Fees',
-                    method: 'percent',
-                    value: 8,
-                    baseType: 'construction',
-                    phasing: 'even',
-                    startPeriod: 1,
-                    endPeriod: 8,
-                    isLocked: false
-                },
-                {
-                    id: 5,
-                    name: 'Contingency',
-                    method: 'percent',
-                    value: 5,
-                    baseType: 'all',
-                    phasing: 'even',
-                    startPeriod: 1,
-                    endPeriod: constructionPeriods - 1,
-                    isLocked: false
-                },
-                {
-                    id: 6,
-                    name: 'Developer Fee',
-                    method: 'percent',
-                    value: 3,
-                    baseType: 'all',
-                    phasing: 'even',
-                    startPeriod: 0,
-                    endPeriod: constructionPeriods - 1,
-                    isLocked: false
-                },
-                {
-                    id: 7,
-                    name: 'Government & Statutory',
-                    method: 'fixed',
-                    value: 500000,
-                    baseType: '',
-                    phasing: [50, 50],
-                    startPeriod: 0,
-                    endPeriod: 1,
-                    isLocked: false
-                },
-                {
-                    id: 8,
-                    name: 'Finance Cost (Capitalized)',
-                    method: 'percent',
-                    value: 0,
-                    baseType: 'all',
-                    phasing: 'even',
-                    startPeriod: 0,
-                    endPeriod: constructionPeriods - 1,
-                    isLocked: false
-                }
-            ]);
-
-            const [nextId, setNextId] = useState(9);
-
-            // Calculate total cost for an item
-            const calculateItemTotal = (item) => {
-                switch (item.method) {
-                    case 'fixed':
-                        return item.value;
-                    case 'sqm_total':
-                        return item.value * totalArea;
-                    case 'sqm_net':
-                        return item.value * netArea;
-                    case 'sqm_gfa':
-                        return item.value * gfa;
-                    case 'sqm_bua':
-                        return item.value * bua;
-                    case 'percent':
-                        return calculatePercentBase(item);
-                    default:
-                        return 0;
-                }
-            };
-
-            // Calculate base for percentage items
-            const calculatePercentBase = (item) => {
-                let base = 0;
-                const otherItems = costItems.filter(ci => ci.id !== item.id && ci.name !== 'Finance Cost (Capitalized)');
-                
-                switch (item.baseType) {
-                    case 'land':
-                        const landItem = costItems.find(ci => ci.name === 'Land (Cash Portion)');
-                        base = landItem ? calculateItemTotal(landItem) : 0;
-                        break;
-                    case 'construction':
-                        const constructionItem = costItems.find(ci => ci.name === 'Construction Cost');
-                        base = constructionItem ? calculateItemTotal(constructionItem) : 0;
-                        break;
-                    case 'infra':
-                        const infraItem = costItems.find(ci => ci.name === 'Infrastructure Development');
-                        base = infraItem ? calculateItemTotal(infraItem) : 0;
-                        break;
-                    case 'all':
-                        base = otherItems.reduce((sum, ci) => sum + calculateItemTotal(ci), 0);
-                        break;
-                    default:
-                        base = 0;
-                }
-                return base * (item.value / 100);
-            };
-
-            // Parse phasing - now handles both array and string formats
-            const parsePhasing = (phasing, startPeriod, endPeriod) => {
-                const periodCount = endPeriod - startPeriod + 1;
-                
-                // If it's already an array, return it
-                if (Array.isArray(phasing)) {
-                    return phasing.length === periodCount ? phasing : Array(periodCount).fill(100 / periodCount);
-                }
-                
-                // Handle "even" keyword
-                if (typeof phasing === 'string' && phasing.toLowerCase() === 'even') {
-                    const percent = 100 / periodCount;
-                    return Array(periodCount).fill(percent);
-                }
-                
-                // Handle comma-separated string (backward compatibility)
-                if (typeof phasing === 'string') {
-                    const percentages = phasing.split(',').map(p => parseFloat(p.trim())).filter(p => !isNaN(p));
-                    if (percentages.length === periodCount) {
-                        return percentages;
-                    }
-                }
-                
-                // Default to even distribution
-                return Array(periodCount).fill(100 / periodCount);
-            };
-
-            // Calculate phased amounts for an item
-            const calculatePhasedAmounts = (item) => {
-                const total = calculateItemTotal(item);
-                const phasing = parsePhasing(item.phasing, item.startPeriod, item.endPeriod);
-                const amounts = Array(constructionPeriods).fill(0);
-                
-                phasing.forEach((percent, idx) => {
-                    const period = item.startPeriod + idx;
-                    if (period < constructionPeriods) {
-                        amounts[period] = (total * percent) / 100;
-                    }
-                });
-                
-                return amounts;
-            };
-
-            // Validate phasing
-            const validatePhasing = (phasing, startPeriod, endPeriod) => {
-                const periodCount = endPeriod - startPeriod + 1;
-                
-                // Handle array format
-                if (Array.isArray(phasing)) {
-                    if (phasing.length !== periodCount) {
-                        return { valid: false, message: `Need ${periodCount} periods` };
-                    }
-                    const sum = phasing.reduce((a, b) => a + b, 0);
-                    if (Math.abs(sum - 100) > 0.01) {
-                        return { valid: false, message: `Sum is ${sum.toFixed(1)}%, not 100%`, sum: sum };
-                    }
-                    return { valid: true, message: '', sum: sum };
-                }
-                
-                // Handle "even" keyword
-                if (typeof phasing === 'string' && phasing.toLowerCase() === 'even') {
-                    return { valid: true, message: '', sum: 100 };
-                }
-                
-                // Handle comma-separated string
-                if (typeof phasing === 'string') {
-                    const percentages = phasing.split(',').map(p => parseFloat(p.trim())).filter(p => !isNaN(p));
-                    
-                    if (percentages.length !== periodCount) {
-                        return { valid: false, message: `Need ${periodCount} values`, sum: 0 };
-                    }
-                    
-                    const sum = percentages.reduce((a, b) => a + b, 0);
-                    if (Math.abs(sum - 100) > 0.01) {
-                        return { valid: false, message: `Sum is ${sum.toFixed(1)}%, not 100%`, sum: sum };
-                    }
-                    
-                    return { valid: true, message: '', sum: sum };
-                }
-                
-                return { valid: false, message: 'Invalid format', sum: 0 };
-            };
-
-            // Calculate CAPEX table
-            const capexTable = useMemo(() => {
-                return costItems.map(item => ({
-                    name: item.name,
-                    amounts: calculatePhasedAmounts(item),
-                    total: calculateItemTotal(item)
-                }));
-            }, [costItems, totalArea, netArea, gfa, bua]);
-
-            // Calculate column totals
-            const columnTotals = useMemo(() => {
-                const totals = Array(constructionPeriods).fill(0);
-                capexTable.forEach(row => {
-                    row.amounts.forEach((amount, idx) => {
-                        totals[idx] += amount;
-                    });
-                });
-                return totals;
-            }, [capexTable]);
-
-            // Add new cost item
-            const addCostItem = () => {
-                const newItem = {
-                    id: nextId,
-                    name: 'New Cost Item',
-                    method: 'fixed',
-                    value: 0,
-                    baseType: '',
-                    phasing: 'even',
-                    startPeriod: 0,
-                    endPeriod: Math.min(5, constructionPeriods - 1),
-                    isLocked: false
-                };
-                setCostItems([...costItems, newItem]);
-                setNextId(nextId + 1);
-            };
-
-            // Delete cost item
-            const deleteCostItem = (id) => {
-                setCostItems(costItems.filter(item => item.id !== id));
-            };
-
-            // Update cost item
-            const updateCostItem = (id, field, value) => {
-                setCostItems(costItems.map(item => {
-                    if (item.id === id) {
-                        // When start or end period changes, reset phasing to even
-                        if (field === 'startPeriod' || field === 'endPeriod') {
-                            const newItem = { ...item, [field]: value };
-                            const periodCount = newItem.endPeriod - newItem.startPeriod + 1;
-                            return { ...newItem, phasing: 'even' };
-                        }
-                        return { ...item, [field]: value };
-                    }
-                    return item;
-                }));
-            };
-
-            // Update individual period percentage
-            const updatePeriodPercent = (itemId, periodIndex, value) => {
-                setCostItems(costItems.map(item => {
-                    if (item.id === itemId) {
-                        const phasing = Array.isArray(item.phasing) 
-                            ? [...item.phasing] 
-                            : parsePhasing(item.phasing, item.startPeriod, item.endPeriod);
-                        
-                        phasing[periodIndex] = parseFloat(value) || 0;
-                        return { ...item, phasing };
-                    }
-                    return item;
-                }));
-            };
-
-            // Set phasing to even distribution
-            const setEvenDistribution = (itemId) => {
-                setCostItems(costItems.map(item => {
-                    if (item.id === itemId) {
-                        return { ...item, phasing: 'even' };
-                    }
-                    return item;
-                }));
-            };
-
-            // Format number
-            const formatNumber = (num) => {
-                if (num === 0) return '0';
-                if (Math.abs(num) >= 1000000) {
-                    return (num / 1000000).toFixed(2) + 'M';
-                }
-                if (Math.abs(num) >= 1000) {
-                    return (num / 1000).toFixed(0) + 'K';
-                }
-                return num.toFixed(0);
-            };
-
-            // Update land cost when prop changes
-            useEffect(() => {
-                setCostItems(items => items.map(item => 
-                    item.name === 'Land (Cash Portion)' 
-                        ? { ...item, value: landCashPortion }
-                        : item
-                ));
-            }, [landCashPortion]);
-
-            const periodLabel = modelType === 'monthly' ? 'Month' : 'Year';
-
-            return (
-                <div className="module-card p-6 mb-6">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-2xl font-bold text-gray-800">{assetType} - Development Costs</h3>
-                        <button
-                            onClick={addCostItem}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium"
-                        >
-                            + Add Cost Item
-                        </button>
-                    </div>
-
-                    {/* Area Summary */}
-                    <div className="bg-gray-50 p-4 rounded-lg mb-6 grid grid-cols-5 gap-4 text-sm">
-                        <div>
-                            <div className="text-gray-600">Total Area</div>
-                            <div className="font-bold text-gray-900">{formatNumber(totalArea)} sqm</div>
-                        </div>
-                        <div>
-                            <div className="text-gray-600">Net Area</div>
-                            <div className="font-bold text-gray-900">{formatNumber(netArea)} sqm</div>
-                        </div>
-                        <div>
-                            <div className="text-gray-600">GFA</div>
-                            <div className="font-bold text-gray-900">{formatNumber(gfa)} sqm</div>
-                        </div>
-                        <div>
-                            <div className="text-gray-600">BUA</div>
-                            <div className="font-bold text-gray-900">{formatNumber(bua)} sqm</div>
-                        </div>
-                        <div>
-                            <div className="text-gray-600">Land (Cash)</div>
-                            <div className="font-bold text-gray-900">${formatNumber(landCashPortion)}</div>
-                        </div>
-                    </div>
-
-                    {/* Cost Items Configuration */}
-                    <div className="mb-8">
-                        {costItems.map((item, itemIdx) => {
-                            const validation = validatePhasing(item.phasing, item.startPeriod, item.endPeriod);
-                            const phasingArray = parsePhasing(item.phasing, item.startPeriod, item.endPeriod);
-                            const periodCount = item.endPeriod - item.startPeriod + 1;
-                            const totalCost = calculateItemTotal(item);
-                            
-                            return (
-                                <div key={item.id} className="mb-6 border border-gray-300 rounded-lg p-4 bg-white">
-                                    {/* Cost Item Header */}
-                                    <div className="grid grid-cols-12 gap-3 mb-3 pb-3 border-b border-gray-200">
-                                        <div className="col-span-3">
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">Cost Item Name</label>
-                                            {item.isLocked ? (
-                                                <div className="font-semibold text-gray-800">{item.name}</div>
-                                            ) : (
-                                                <input
-                                                    type="text"
-                                                    value={item.name}
-                                                    onChange={(e) => updateCostItem(item.id, 'name', e.target.value)}
-                                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                                                />
-                                            )}
-                                        </div>
-                                        
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">Calculation Method</label>
-                                            <select
-                                                value={item.method}
-                                                onChange={(e) => updateCostItem(item.id, 'method', e.target.value)}
-                                                disabled={item.isLocked}
-                                                className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs"
-                                            >
-                                                <option value="fixed">Fixed Amount</option>
-                                                <option value="sqm_total">Rate/sqm - Total Area</option>
-                                                <option value="sqm_net">Rate/sqm - Net Area</option>
-                                                <option value="sqm_gfa">Rate/sqm - GFA</option>
-                                                <option value="sqm_bua">Rate/sqm - BUA</option>
-                                                <option value="percent">% of Base Cost</option>
-                                            </select>
-                                        </div>
-                                        
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                                                {item.method === 'percent' ? 'Percentage (%)' : 'Value/Rate'}
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={item.value}
-                                                onChange={(e) => updateCostItem(item.id, 'value', parseFloat(e.target.value) || 0)}
-                                                disabled={item.isLocked}
-                                                className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-right"
-                                                step={item.method === 'percent' ? '0.1' : '1'}
-                                            />
-                                        </div>
-                                        
-                                        {item.method === 'percent' && (
-                                            <div className="col-span-2">
-                                                <label className="block text-xs font-medium text-gray-600 mb-1">Base Cost Type</label>
-                                                <select
-                                                    value={item.baseType}
-                                                    onChange={(e) => updateCostItem(item.id, 'baseType', e.target.value)}
-                                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs"
-                                                >
-                                                    <option value="land">Land Cash Only</option>
-                                                    <option value="construction">Construction Cost</option>
-                                                    <option value="infra">Infrastructure</option>
-                                                    <option value="all">All Other Costs</option>
-                                                </select>
-                                            </div>
-                                        )}
-                                        
-                                        <div className={`${item.method === 'percent' ? 'col-span-2' : 'col-span-4'}`}>
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">Total Cost</label>
-                                            <div className="font-bold text-lg text-blue-600">${formatNumber(totalCost)}</div>
-                                        </div>
-                                        
-                                        <div className="col-span-1 flex items-end justify-end">
-                                            {!item.isLocked && (
-                                                <button
-                                                    onClick={() => deleteCostItem(item.id)}
-                                                    className="px-3 py-1.5 bg-red-500 text-white rounded text-xs hover:bg-red-600"
-                                                >
-                                                    Delete
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Period Configuration */}
-                                    <div className="grid grid-cols-12 gap-3 mb-3">
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">Start Period</label>
-                                            <input
-                                                type="number"
-                                                value={item.startPeriod}
-                                                onChange={(e) => updateCostItem(item.id, 'startPeriod', parseInt(e.target.value) || 0)}
-                                                className="w-full px-2 py-1.5 border border-gray-300 rounded text-center"
-                                                min="0"
-                                                max={constructionPeriods - 1}
-                                            />
-                                        </div>
-                                        
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">End Period</label>
-                                            <input
-                                                type="number"
-                                                value={item.endPeriod}
-                                                onChange={(e) => updateCostItem(item.id, 'endPeriod', parseInt(e.target.value) || 0)}
-                                                className="w-full px-2 py-1.5 border border-gray-300 rounded text-center"
-                                                min={item.startPeriod}
-                                                max={constructionPeriods - 1}
-                                            />
-                                        </div>
-                                        
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">Periods Count</label>
-                                            <div className="px-2 py-1.5 bg-gray-100 border border-gray-300 rounded text-center font-medium">
-                                                {periodCount}
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="col-span-3">
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                                                Total % 
-                                                <span className={`ml-2 font-bold ${validation.valid ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {validation.sum ? validation.sum.toFixed(1) : '0.0'}%
-                                                </span>
-                                            </label>
-                                            <button
-                                                onClick={() => setEvenDistribution(item.id)}
-                                                className="w-full px-2 py-1.5 bg-purple-600 text-white rounded text-xs hover:bg-purple-700"
-                                            >
-                                                Set Even Distribution
-                                            </button>
-                                        </div>
-                                        
-                                        <div className="col-span-3">
-                                            {!validation.valid && (
-                                                <div className="mt-5 text-xs text-red-600 font-medium bg-red-50 px-2 py-1 rounded">
-                                                    ⚠️ {validation.message}
-                                                </div>
-                                            )}
-                                            {validation.valid && validation.sum === 100 && (
-                                                <div className="mt-5 text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">
-                                                    ✓ Valid (100%)
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Period-by-Period % Distribution */}
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-2">
-                                            Disbursement Schedule - % per {periodLabel}
-                                        </label>
-                                        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(80px, 1fr))` }}>
-                                            {phasingArray.map((percent, idx) => {
-                                                const actualPeriod = item.startPeriod + idx;
-                                                return (
-                                                    <div key={idx} className="flex flex-col">
-                                                        <label className="text-xs text-gray-500 mb-1 text-center">
-                                                            {periodLabel} {actualPeriod}
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            value={percent.toFixed(2)}
-                                                            onChange={(e) => updatePeriodPercent(item.id, idx, e.target.value)}
-                                                            className="px-2 py-1.5 border border-gray-300 rounded text-center text-sm"
-                                                            step="0.1"
-                                                            min="0"
-                                                            max="100"
-                                                        />
-                                                        <div className="text-xs text-gray-500 mt-0.5 text-center">
-                                                            ${formatNumber((totalCost * percent) / 100)}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        
-                        {/* Total Summary Row */}
-                        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-lg">
-                            <div className="flex justify-between items-center">
-                                <span className="text-lg font-bold">TOTAL CAPEX FOR {assetType.toUpperCase()}</span>
-                                <span className="text-2xl font-bold">
-                                    ${formatNumber(capexTable.reduce((sum, row) => sum + row.total, 0))}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* CAPEX Summary Table */}
-                    <div>
-                        <h4 className="text-lg font-bold text-gray-700 mb-3">CAPEX Summary by Period</h4>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-xs">
-                                <thead>
-                                    <tr className="bg-gray-800 text-white">
-                                        <th className="p-2 text-left sticky left-0 bg-gray-800 z-10">Cost Item</th>
-                                        {Array.from({ length: constructionPeriods }, (_, i) => (
-                                            <th key={i} className="p-2 text-center">{periodLabel} {i}</th>
-                                        ))}
-                                        <th className="p-2 text-center bg-gray-900">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {capexTable.map((row, idx) => (
-                                        <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                            <td className="p-2 border font-medium sticky left-0 bg-inherit z-10">{row.name}</td>
-                                            {row.amounts.map((amount, i) => (
-                                                <td key={i} className="p-2 border text-right">
-                                                    {amount > 0 ? `$${formatNumber(amount)}` : '-'}
-                                                </td>
-                                            ))}
-                                            <td className="p-2 border text-right font-semibold bg-gray-100">
-                                                ${formatNumber(row.total)}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    <tr className="bg-blue-600 text-white font-bold">
-                                        <td className="p-3 sticky left-0 bg-blue-600 z-10">TOTAL</td>
-                                        {columnTotals.map((total, i) => (
-                                            <td key={i} className="p-3 text-right">
-                                                {total > 0 ? `$${formatNumber(total)}` : '-'}
-                                            </td>
-                                        ))}
-                                        <td className="p-3 text-right bg-blue-700">
-                                            ${formatNumber(columnTotals.reduce((a, b) => a + b, 0))}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // Financing Section Component
-        function FinancingSection({ 
-            assetType, 
-            capexData, 
-            constructionPeriods, 
-            operationsPeriods, 
-            modelType,
-            interestRate 
-        }) {
-            // Financing Settings
-            const [repaymentMethod, setRepaymentMethod] = useState('agreed');
-            const [repaymentPeriod, setRepaymentPeriod] = useState(60);
-            const [paymentType, setPaymentType] = useState('amortizing');
-            const [minCashReserve, setMinCashReserve] = useState(1000000);
-            const [sweepPercentage, setSweepPercentage] = useState(50);
-            const [capitalizeInterest, setCapitalizeInterest] = useState(true);
-            const [debtDrawdownStartPeriod, setDebtDrawdownStartPeriod] = useState(7);
-            
-            // Capital Structure
-            const [capitalStructureMode, setCapitalStructureMode] = useState('fixed'); // fixed or separate
-            const [fixedDebtPercent, setFixedDebtPercent] = useState(60);
-            const [financeDebtPercent, setFinanceDebtPercent] = useState(70);
-            
-            // Line item financing (for separate mode)
-            const [lineItemFinancing, setLineItemFinancing] = useState({});
-            
-            // Equity Investors
-            const [investors, setInvestors] = useState([
-                { id: 1, name: 'Investor A', ownership: 60 },
-                { id: 2, name: 'Investor B', ownership: 40 }
-            ]);
-            const [nextInvestorId, setNextInvestorId] = useState(3);
-            
-            const totalPeriods = constructionPeriods + operationsPeriods;
-            const periodLabel = modelType === 'monthly' ? 'Month' : 'Year';
-            const periodsPerYear = modelType === 'monthly' ? 12 : 1;
-            
-            // Initialize line item financing from capex data
-            useEffect(() => {
-                if (capexData && capexData.length > 0) {
-                    const initial = {};
-                    capexData.forEach(item => {
-                        if (!lineItemFinancing[item.name]) {
-                            initial[item.name] = {
-                                equityPercent: item.name === 'Land (Cash Portion)' ? 100 : 40
-                            };
-                        }
-                    });
-                    if (Object.keys(initial).length > 0) {
-                        setLineItemFinancing({ ...lineItemFinancing, ...initial });
-                    }
-                }
-            }, [capexData]);
-            
-            // Get equity % for a line item
-            const getEquityPercent = (itemName) => {
-                if (capitalStructureMode === 'fixed') {
-                    return 100 - fixedDebtPercent;
-                }
-                return lineItemFinancing[itemName]?.equityPercent || 40;
-            };
-            
-            // Get debt % for a line item
-            const getDebtPercent = (itemName) => {
-                return 100 - getEquityPercent(itemName);
-            };
-            
-            // Update line item equity %
-            const updateLineItemEquity = (itemName, equityPercent) => {
-                setLineItemFinancing({
-                    ...lineItemFinancing,
-                    [itemName]: { equityPercent: parseFloat(equityPercent) || 0 }
-                });
-            };
-            
-            // Calculate financing structure
-            const financingStructure = useMemo(() => {
-                if (!capexData) return [];
-                
-                return capexData.map(item => {
-                    const total = item.total;
-                    const equityPercent = getEquityPercent(item.name);
-                    const debtPercent = 100 - equityPercent;
-                    const equityAmount = (total * equityPercent) / 100;
-                    const debtAmount = (total * debtPercent) / 100;
-                    
-                    return {
-                        name: item.name,
-                        total,
-                        equityPercent,
-                        equityAmount,
-                        debtPercent,
-                        debtAmount
-                    };
-                });
-            }, [capexData, capitalStructureMode, fixedDebtPercent, lineItemFinancing]);
-            
-            // Calculate totals
-            const totals = useMemo(() => {
-                const total = financingStructure.reduce((sum, item) => sum + item.total, 0);
-                const equity = financingStructure.reduce((sum, item) => sum + item.equityAmount, 0);
-                const debt = financingStructure.reduce((sum, item) => sum + item.debtAmount, 0);
-                
-                return {
-                    total,
-                    equity,
-                    debt,
-                    equityPercent: total > 0 ? (equity / total) * 100 : 0,
-                    debtPercent: total > 0 ? (debt / total) * 100 : 0
-                };
-            }, [financingStructure]);
-            
-            // Calculate drawdown schedule
-            const drawdownSchedule = useMemo(() => {
-                if (!capexData) return { debt: [], equity: [], total: [] };
-                
-                const debtDrawdown = Array(totalPeriods).fill(0);
-                const equityDrawdown = Array(totalPeriods).fill(0);
-                
-                // Process each cost item
-                capexData.forEach(item => {
-                    item.amounts.forEach((amount, periodIdx) => {
-                        if (amount > 0 && periodIdx < constructionPeriods) {
-                            const equityPercent = getEquityPercent(item.name);
-                            const debtPercent = 100 - equityPercent;
-                            
-                            // Drawdown in previous period (or same period if period 0)
-                            const drawdownPeriod = Math.max(0, periodIdx - 1);
-                            
-                            if (drawdownPeriod >= debtDrawdownStartPeriod - 1) {
-                                debtDrawdown[drawdownPeriod] += (amount * debtPercent) / 100;
-                            }
-                            equityDrawdown[drawdownPeriod] += (amount * equityPercent) / 100;
-                        }
-                    });
-                });
-                
-                const totalDrawdown = debtDrawdown.map((debt, i) => debt + equityDrawdown[i]);
-                
-                return {
-                    debt: debtDrawdown,
-                    equity: equityDrawdown,
-                    total: totalDrawdown
-                };
-            }, [capexData, financingStructure, debtDrawdownStartPeriod, constructionPeriods, totalPeriods]);
-            
-            // Calculate debt balance schedule
-            const debtBalanceSchedule = useMemo(() => {
-                const opening = Array(totalPeriods).fill(0);
-                const drawdown = drawdownSchedule.debt;
-                const interestCharged = Array(totalPeriods).fill(0);
-                const interestCapitalized = Array(totalPeriods).fill(0);
-                const interestPaid = Array(totalPeriods).fill(0);
-                const principalRepayment = Array(totalPeriods).fill(0);
-                const closing = Array(totalPeriods).fill(0);
-                
-                const periodRate = (interestRate / 100) / periodsPerYear;
-                
-                for (let i = 0; i < totalPeriods; i++) {
-                    // Opening balance
-                    opening[i] = i === 0 ? 0 : closing[i - 1];
-                    
-                    // Interest on opening balance
-                    interestCharged[i] = opening[i] * periodRate;
-                    
-                    // During construction: capitalize interest
-                    if (i < constructionPeriods && capitalizeInterest) {
-                        interestCapitalized[i] = interestCharged[i];
-                        interestPaid[i] = 0;
-                    } else {
-                        // During operations: pay interest
-                        interestCapitalized[i] = 0;
-                        interestPaid[i] = interestCharged[i];
-                    }
-                    
-                    // Principal repayment (only during operations)
-                    if (i >= constructionPeriods) {
-                        const remainingPeriods = totalPeriods - i;
-                        const outstandingBalance = opening[i] + interestCapitalized[i] + drawdown[i];
-                        
-                        if (repaymentMethod === 'agreed') {
-                            if (paymentType === 'amortizing') {
-                                // Amortization formula
-                                const n = Math.min(repaymentPeriod, remainingPeriods);
-                                if (n > 0 && outstandingBalance > 0) {
-                                    const payment = (outstandingBalance * periodRate * Math.pow(1 + periodRate, n)) / 
-                                                  (Math.pow(1 + periodRate, n) - 1);
-                                    principalRepayment[i] = Math.min(payment - interestPaid[i], outstandingBalance);
-                                }
-                            } else {
-                                // Interest only + balloon
-                                if (i === totalPeriods - 1) {
-                                    principalRepayment[i] = outstandingBalance;
-                                }
-                            }
-                        } else {
-                            // Cash sweep - simplified (would need revenue data)
-                            principalRepayment[i] = 0; // Placeholder
-                        }
-                    }
-                    
-                    // Closing balance
-                    closing[i] = opening[i] + drawdown[i] + interestCapitalized[i] - principalRepayment[i];
-                }
-                
-                return {
-                    opening,
-                    drawdown,
-                    interestCharged,
-                    interestCapitalized,
-                    interestPaid,
-                    principalRepayment,
-                    closing
-                };
-            }, [drawdownSchedule, totalPeriods, constructionPeriods, interestRate, periodsPerYear, 
-                capitalizeInterest, repaymentMethod, paymentType, repaymentPeriod]);
-            
-            // Equity investor contributions
-            const investorContributions = useMemo(() => {
-                return investors.map(investor => ({
-                    ...investor,
-                    contributions: drawdownSchedule.equity.map(eq => (eq * investor.ownership) / 100),
-                    total: drawdownSchedule.equity.reduce((sum, eq) => sum + (eq * investor.ownership) / 100, 0)
-                }));
-            }, [investors, drawdownSchedule]);
-            
-            // Investor management
-            const addInvestor = () => {
-                setInvestors([...investors, { id: nextInvestorId, name: `Investor ${String.fromCharCode(64 + nextInvestorId)}`, ownership: 0 }]);
-                setNextInvestorId(nextInvestorId + 1);
-            };
-            
-            const deleteInvestor = (id) => {
-                setInvestors(investors.filter(inv => inv.id !== id));
-            };
-            
-            const updateInvestor = (id, field, value) => {
-                setInvestors(investors.map(inv => 
-                    inv.id === id ? { ...inv, [field]: value } : inv
-                ));
-            };
-            
-            const totalInvestorOwnership = investors.reduce((sum, inv) => sum + (inv.ownership || 0), 0);
-            
-            const formatNumber = (num) => {
-                if (num === 0) return '0';
-                if (Math.abs(num) >= 1000000) return (num / 1000000).toFixed(2) + 'M';
-                if (Math.abs(num) >= 1000) return (num / 1000).toFixed(0) + 'K';
-                return num.toFixed(0);
-            };
-            
-            return (
-                <div className="module-card p-6 mb-6">
-                    <h3 className="text-2xl font-bold text-gray-800 mb-6">{assetType} - Financing Structure</h3>
-                    
-                    {/* Debt Repayment Terms */}
-                    <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                        <h4 className="font-bold text-gray-700 mb-3">Debt Repayment Terms</h4>
-                        <div className="grid grid-cols-5 gap-4">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Repayment Method</label>
-                                <select
-                                    value={repaymentMethod}
-                                    onChange={(e) => setRepaymentMethod(e.target.value)}
-                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                                >
-                                    <option value="agreed">Agreed Terms</option>
-                                    <option value="sweep">Cash Sweep</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Payment Type</label>
-                                <select
-                                    value={paymentType}
-                                    onChange={(e) => setPaymentType(e.target.value)}
-                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                                >
-                                    <option value="amortizing">Amortizing</option>
-                                    <option value="interest_balloon">Interest Only + Balloon</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Repayment Period</label>
-                                <input
-                                    type="number"
-                                    value={repaymentPeriod}
-                                    onChange={(e) => setRepaymentPeriod(parseInt(e.target.value) || 0)}
-                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Interest Rate (%)</label>
-                                <input
-                                    type="number"
-                                    value={interestRate}
-                                    disabled
-                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm bg-gray-200"
-                                    step="0.1"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Debt Start Period</label>
-                                <input
-                                    type="number"
-                                    value={debtDrawdownStartPeriod}
-                                    onChange={(e) => setDebtDrawdownStartPeriod(parseInt(e.target.value) || 0)}
-                                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                                    min="0"
-                                />
-                            </div>
-                        </div>
-                        <div className="mt-3 flex items-center gap-4">
-                            <label className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    checked={capitalizeInterest}
-                                    onChange={(e) => setCapitalizeInterest(e.target.checked)}
-                                    className="w-4 h-4"
-                                />
-                                <span className="text-sm text-gray-700">Capitalize Interest During Construction</span>
-                            </label>
-                            <span className="text-xs text-gray-500">(Interest calculated on Opening Balance)</span>
-                        </div>
-                    </div>
-                    
-                    {/* Capital Structure Selection */}
-                    <div className="bg-blue-50 p-4 rounded-lg mb-6">
-                        <h4 className="font-bold text-gray-700 mb-3">Capital Structure</h4>
-                        <div className="flex gap-6 mb-3">
-                            <label className="flex items-center gap-2">
-                                <input
-                                    type="radio"
-                                    checked={capitalStructureMode === 'fixed'}
-                                    onChange={() => setCapitalStructureMode('fixed')}
-                                    className="w-4 h-4"
-                                />
-                                <span className="text-sm text-gray-700">Fixed % for all items</span>
-                            </label>
-                            <label className="flex items-center gap-2">
-                                <input
-                                    type="radio"
-                                    checked={capitalStructureMode === 'separate'}
-                                    onChange={() => setCapitalStructureMode('separate')}
-                                    className="w-4 h-4"
-                                />
-                                <span className="text-sm text-gray-700">Separate % by line item</span>
-                            </label>
-                        </div>
-                        
-                        {capitalStructureMode === 'fixed' && (
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Debt %</label>
-                                    <input
-                                        type="number"
-                                        value={fixedDebtPercent}
-                                        onChange={(e) => setFixedDebtPercent(parseFloat(e.target.value) || 0)}
-                                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                                        step="1"
-                                        min="0"
-                                        max="100"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Equity %</label>
-                                    <div className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm bg-gray-100 font-medium">
-                                        {(100 - fixedDebtPercent).toFixed(1)}%
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Finance Cost Debt %</label>
-                                    <input
-                                        type="number"
-                                        value={financeDebtPercent}
-                                        onChange={(e) => setFinanceDebtPercent(parseFloat(e.target.value) || 0)}
-                                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                                        step="1"
-                                        min="0"
-                                        max="100"
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    
-                    {/* Financing Structure Table */}
-                    <div className="mb-6">
-                        <h4 className="font-bold text-gray-700 mb-3">Financing Structure</h4>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-gray-800 text-white">
-                                        <th className="p-2 text-left">Description</th>
-                                        <th className="p-2 text-right">Total</th>
-                                        <th className="p-2 text-center">Equity %</th>
-                                        <th className="p-2 text-right">Equity $</th>
-                                        <th className="p-2 text-center">Debt %</th>
-                                        <th className="p-2 text-right">Debt $</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {financingStructure.map((item, idx) => (
-                                        <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                            <td className="p-2 border font-medium">{item.name}</td>
-                                            <td className="p-2 border text-right">${formatNumber(item.total)}</td>
-                                            <td className="p-2 border text-center">
-                                                {capitalStructureMode === 'separate' ? (
-                                                    <input
-                                                        type="number"
-                                                        value={item.equityPercent.toFixed(1)}
-                                                        onChange={(e) => updateLineItemEquity(item.name, e.target.value)}
-                                                        className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center"
-                                                        step="1"
-                                                        min="0"
-                                                        max="100"
-                                                    />
-                                                ) : (
-                                                    <span>{item.equityPercent.toFixed(1)}%</span>
-                                                )}
-                                            </td>
-                                            <td className="p-2 border text-right text-green-700 font-semibold">${formatNumber(item.equityAmount)}</td>
-                                            <td className="p-2 border text-center">{item.debtPercent.toFixed(1)}%</td>
-                                            <td className="p-2 border text-right text-red-700 font-semibold">${formatNumber(item.debtAmount)}</td>
-                                        </tr>
-                                    ))}
-                                    <tr className="bg-blue-600 text-white font-bold">
-                                        <td className="p-3">TOTAL</td>
-                                        <td className="p-3 text-right">${formatNumber(totals.total)}</td>
-                                        <td className="p-3 text-center">{totals.equityPercent.toFixed(1)}%</td>
-                                        <td className="p-3 text-right">${formatNumber(totals.equity)}</td>
-                                        <td className="p-3 text-center">{totals.debtPercent.toFixed(1)}%</td>
-                                        <td className="p-3 text-right">${formatNumber(totals.debt)}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    {/* Drawdown Schedule */}
-                    <div className="mb-6">
-                        <h4 className="font-bold text-gray-700 mb-3">Drawdown Schedule</h4>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-xs">
-                                <thead>
-                                    <tr className="bg-gray-800 text-white">
-                                        <th className="p-2 text-left sticky left-0 bg-gray-800 z-10">Source</th>
-                                        <th className="p-2 text-right bg-gray-900">Total</th>
-                                        {Array.from({ length: constructionPeriods }, (_, i) => (
-                                            <th key={i} className="p-2 text-center">{periodLabel} {i}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr className="bg-red-50">
-                                        <td className="p-2 border font-medium sticky left-0 bg-red-50 z-10">Debt Drawdown</td>
-                                        <td className="p-2 border text-right font-semibold bg-red-100">
-                                            ${formatNumber(drawdownSchedule.debt.reduce((a,b) => a+b, 0))}
-                                        </td>
-                                        {drawdownSchedule.debt.slice(0, constructionPeriods).map((amt, i) => (
-                                            <td key={i} className="p-2 border text-right">
-                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <tr className="bg-green-50">
-                                        <td className="p-2 border font-medium sticky left-0 bg-green-50 z-10">Equity Contribution</td>
-                                        <td className="p-2 border text-right font-semibold bg-green-100">
-                                            ${formatNumber(drawdownSchedule.equity.reduce((a,b) => a+b, 0))}
-                                        </td>
-                                        {drawdownSchedule.equity.slice(0, constructionPeriods).map((amt, i) => (
-                                            <td key={i} className="p-2 border text-right">
-                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <tr className="bg-blue-600 text-white font-bold">
-                                        <td className="p-3 sticky left-0 bg-blue-600 z-10">TOTAL FUNDING</td>
-                                        <td className="p-3 text-right bg-blue-700">
-                                            ${formatNumber(drawdownSchedule.total.reduce((a,b) => a+b, 0))}
-                                        </td>
-                                        {drawdownSchedule.total.slice(0, constructionPeriods).map((amt, i) => (
-                                            <td key={i} className="p-3 text-right">
-                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    {/* Debt Balance Schedule */}
-                    <div className="mb-6">
-                        <h4 className="font-bold text-gray-700 mb-3">Debt Balance Schedule (Full Project)</h4>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-xs">
-                                <thead>
-                                    <tr className="bg-gray-800 text-white">
-                                        <th className="p-2 text-left sticky left-0 bg-gray-800 z-10">Line Item</th>
-                                        {Array.from({ length: Math.min(totalPeriods, 25) }, (_, i) => (
-                                            <th key={i} className="p-2 text-center">{periodLabel} {i}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr className="bg-white">
-                                        <td className="p-2 border font-medium sticky left-0 bg-white z-10">Opening Balance</td>
-                                        {debtBalanceSchedule.opening.slice(0, 25).map((amt, i) => (
-                                            <td key={i} className="p-2 border text-right">
-                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <tr className="bg-gray-50">
-                                        <td className="p-2 border font-medium sticky left-0 bg-gray-50 z-10">New Drawdown</td>
-                                        {debtBalanceSchedule.drawdown.slice(0, 25).map((amt, i) => (
-                                            <td key={i} className="p-2 border text-right">
-                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <tr className="bg-white">
-                                        <td className="p-2 border font-medium sticky left-0 bg-white z-10">Interest Charged</td>
-                                        {debtBalanceSchedule.interestCharged.slice(0, 25).map((amt, i) => (
-                                            <td key={i} className="p-2 border text-right">
-                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <tr className="bg-yellow-50">
-                                        <td className="p-2 border font-medium sticky left-0 bg-yellow-50 z-10">Interest Capitalized</td>
-                                        {debtBalanceSchedule.interestCapitalized.slice(0, 25).map((amt, i) => (
-                                            <td key={i} className="p-2 border text-right">
-                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <tr className="bg-white">
-                                        <td className="p-2 border font-medium sticky left-0 bg-white z-10">Interest Paid (Cash)</td>
-                                        {debtBalanceSchedule.interestPaid.slice(0, 25).map((amt, i) => (
-                                            <td key={i} className="p-2 border text-right">
-                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <tr className="bg-gray-50">
-                                        <td className="p-2 border font-medium sticky left-0 bg-gray-50 z-10">Principal Repayment</td>
-                                        {debtBalanceSchedule.principalRepayment.slice(0, 25).map((amt, i) => (
-                                            <td key={i} className="p-2 border text-right">
-                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <tr className="bg-blue-100 font-bold">
-                                        <td className="p-3 sticky left-0 bg-blue-100 z-10">Closing Balance</td>
-                                        {debtBalanceSchedule.closing.slice(0, 25).map((amt, i) => (
-                                            <td key={i} className="p-3 text-right">
-                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    {/* Equity Investor Distribution */}
-                    <div>
-                        <div className="flex justify-between items-center mb-3">
-                            <h4 className="font-bold text-gray-700">Equity Investor Distribution</h4>
-                            <button
-                                onClick={addInvestor}
-                                className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                            >
-                                + Add Investor
-                            </button>
-                        </div>
-                        
-                        <div className="mb-3 flex items-center gap-4">
-                            <span className="text-sm text-gray-600">Total Ownership:</span>
-                            <span className={`text-lg font-bold ${Math.abs(totalInvestorOwnership - 100) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
-                                {totalInvestorOwnership.toFixed(1)}%
-                            </span>
-                            {Math.abs(totalInvestorOwnership - 100) >= 0.01 && (
-                                <span className="text-sm text-red-600">⚠️ Must equal 100%</span>
-                            )}
-                        </div>
-                        
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-xs">
-                                <thead>
-                                    <tr className="bg-gray-800 text-white">
-                                        <th className="p-2 text-left">Investor</th>
-                                        <th className="p-2 text-center">Ownership %</th>
-                                        <th className="p-2 text-right">Total Equity</th>
-                                        {Array.from({ length: Math.min(constructionPeriods, 12) }, (_, i) => (
-                                            <th key={i} className="p-2 text-center">{periodLabel} {i}</th>
-                                        ))}
-                                        <th className="p-2 text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {investorContributions.map((investor, idx) => (
-                                        <tr key={investor.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                            <td className="p-2 border">
-                                                <input
-                                                    type="text"
-                                                    value={investor.name}
-                                                    onChange={(e) => updateInvestor(investor.id, 'name', e.target.value)}
-                                                    className="w-full px-2 py-1 border border-gray-300 rounded"
-                                                />
-                                            </td>
-                                            <td className="p-2 border text-center">
-                                                <input
-                                                    type="number"
-                                                    value={investor.ownership}
-                                                    onChange={(e) => updateInvestor(investor.id, 'ownership', parseFloat(e.target.value) || 0)}
-                                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
-                                                    step="0.1"
-                                                />
-                                            </td>
-                                            <td className="p-2 border text-right font-semibold text-green-700">
-                                                ${formatNumber(investor.total)}
-                                            </td>
-                                            {investor.contributions.slice(0, 12).map((amt, i) => (
-                                                <td key={i} className="p-2 border text-right">
-                                                    {amt > 0 ? `$${formatNumber(amt)}` : '-'}
-                                                </td>
-                                            ))}
-                                            <td className="p-2 border text-center">
-                                                {investors.length > 1 && (
-                                                    <button
-                                                        onClick={() => deleteInvestor(investor.id)}
-                                                        className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    <tr className="bg-green-600 text-white font-bold">
-                                        <td className="p-3">TOTAL EQUITY</td>
-                                        <td className="p-3 text-center">100%</td>
-                                        <td className="p-3 text-right">${formatNumber(totals.equity)}</td>
-                                        {drawdownSchedule.equity.slice(0, 12).map((amt, i) => (
-                                            <td key={i} className="p-3 text-right">
-                                                {amt > 0 ? `$${formatNumber(amt)}` : '-'}
-                                            </td>
-                                        ))}
-                                        <td className="p-3"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
         function RealEstatePlatform() {
-            // ========== STATE ==========
+            // State Management
             const [activeModule, setActiveModule] = useState('overview');
             const [activeTab, setActiveTab] = useState('timeline');
             
-            // Project Details & Timeline
+            // Timeline
             const [projectName, setProjectName] = useState('Skyline');
             const [projectType, setProjectType] = useState('mixed-use');
-            const [modelType, setModelType] = useState('monthly'); // monthly or annual
-            const [previousModelType, setPreviousModelType] = useState('monthly');
+            const [modelType, setModelType] = useState('monthly');
             const [projectStart, setProjectStart] = useState('2025-01-01');
             const [constructionPeriods, setConstructionPeriods] = useState(24);
             const [operationsPeriods, setOperationsPeriods] = useState(60);
             
-            // Land Acquisition - Split Cash/In-Kind
+            // Land & Area
             const [cashPercent, setCashPercent] = useState(60);
             const [inKindPercent, setInKindPercent] = useState(40);
             const [totalLandArea, setTotalLandArea] = useState(100000);
             const [landValuePerSqm, setLandValuePerSqm] = useState(500);
             
-            // Area Allocation by Percentage
             const [residentialPercent, setResidentialPercent] = useState(50);
             const [hospitalityPercent, setHospitalityPercent] = useState(30);
             const [retailPercent, setRetailPercent] = useState(20);
             
-            // Roads/Open Areas by Asset
             const [residentialRoadsPercent, setResidentialRoadsPercent] = useState(20);
             const [hospitalityRoadsPercent, setHospitalityRoadsPercent] = useState(15);
             const [retailRoadsPercent, setRetailRoadsPercent] = useState(10);
             
-            // GFA/BUA Multipliers
             const [residentialFAR, setResidentialFAR] = useState(1.5);
             const [residentialEfficiency, setResidentialEfficiency] = useState(0.85);
             const [hospitalityFAR, setHospitalityFAR] = useState(1.2);
@@ -1436,223 +124,112 @@
             
             // Financing
             const [interestRate, setInterestRate] = useState(7.5);
-            const [capitalizeInterest, setCapitalizeInterest] = useState(true);
-            const [capitalStructureType, setCapitalStructureType] = useState('fixed'); // fixed or separate
-            const [fixedDebtPercent, setFixedDebtPercent] = useState(60);
-            const [financeDebtPercent, setFinanceDebtPercent] = useState(70);
             
-            // Debt Repayment
-            const [repaymentMethod, setRepaymentMethod] = useState('agreed'); // agreed or sweep
-            const [repaymentPeriods, setRepaymentPeriods] = useState(120);
-            const [paymentType, setPaymentType] = useState('amortizing'); // amortizing or balloon
-            const [minCashReserve, setMinCashReserve] = useState(500000);
-            const [sweepPercent, setSweepPercent] = useState(100);
-
-            // ========== AUTO-CONVERSION EFFECT ==========
-            useEffect(() => {
-                if (modelType !== previousModelType) {
-                    if (modelType === 'annual' && previousModelType === 'monthly') {
-                        // Convert months to years
-                        setConstructionPeriods(Math.round(constructionPeriods / 12));
-                        setOperationsPeriods(Math.round(operationsPeriods / 12));
-                    } else if (modelType === 'monthly' && previousModelType === 'annual') {
-                        // Convert years to months
-                        setConstructionPeriods(constructionPeriods * 12);
-                        setOperationsPeriods(operationsPeriods * 12);
-                    }
-                    setPreviousModelType(modelType);
-                }
-            }, [modelType]);
-
-            // ========== CALCULATIONS ==========
+            // Calculations
+            const totalLandValue = totalLandArea * landValuePerSqm;
+            const cashValue = (totalLandValue * cashPercent) / 100;
+            const inKindValue = (totalLandValue * inKindPercent) / 100;
             
-            const totalPeriods = constructionPeriods + operationsPeriods;
-            const periodLabel = modelType === 'monthly' ? 'Month' : 'Year';
-            const years = modelType === 'monthly' ? (totalPeriods / 12).toFixed(1) : totalPeriods;
-            
-            // Project Name Display (concatenated with type)
-            const formatProjectType = (type) => {
-                return type.split('-').map(word => 
-                    word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ');
-            };
-            const displayProjectName = `${projectName} - ${formatProjectType(projectType)}`;
-
-            
-            // Land Calculations
-            const cashLandArea = totalLandArea * (cashPercent / 100);
-            const inKindLandArea = totalLandArea * (inKindPercent / 100);
-            const cashLandValue = cashLandArea * landValuePerSqm;
-            const inKindLandValue = inKindLandArea * landValuePerSqm;
-            const totalLandValue = cashLandValue + inKindLandValue;
-            
-            // Area Allocations
-            const residentialTotalArea = totalLandArea * (residentialPercent / 100);
-            const hospitalityTotalArea = totalLandArea * (hospitalityPercent / 100);
-            const retailTotalArea = totalLandArea * (retailPercent / 100);
-            
-            const residentialRoadsArea = residentialTotalArea * (residentialRoadsPercent / 100);
-            const hospitalityRoadsArea = hospitalityTotalArea * (hospitalityRoadsPercent / 100);
-            const retailRoadsArea = retailTotalArea * (retailRoadsPercent / 100);
-            
+            // Residential
+            const residentialTotalArea = (totalLandArea * residentialPercent) / 100;
+            const residentialRoadsArea = (residentialTotalArea * residentialRoadsPercent) / 100;
             const residentialNetArea = residentialTotalArea - residentialRoadsArea;
-            const hospitalityNetArea = hospitalityTotalArea - hospitalityRoadsArea;
-            const retailNetArea = retailTotalArea - retailRoadsArea;
-            
             const residentialGFA = residentialNetArea * residentialFAR;
             const residentialBUA = residentialGFA * residentialEfficiency;
+            const residentialLandValue = residentialTotalArea * landValuePerSqm;
+            
+            // Hospitality
+            const hospitalityTotalArea = (totalLandArea * hospitalityPercent) / 100;
+            const hospitalityRoadsArea = (hospitalityTotalArea * hospitalityRoadsPercent) / 100;
+            const hospitalityNetArea = hospitalityTotalArea - hospitalityRoadsArea;
             const hospitalityGFA = hospitalityNetArea * hospitalityFAR;
             const hospitalityBUA = hospitalityGFA * hospitalityEfficiency;
+            const hospitalityLandValue = hospitalityTotalArea * landValuePerSqm;
+            
+            // Retail
+            const retailTotalArea = (totalLandArea * retailPercent) / 100;
+            const retailRoadsArea = (retailTotalArea * retailRoadsPercent) / 100;
+            const retailNetArea = retailTotalArea - retailRoadsArea;
             const retailGFA = retailNetArea * retailFAR;
             const retailBUA = retailGFA * retailEfficiency;
+            const retailLandValue = retailTotalArea * landValuePerSqm;
             
-            // Validations
-            const landPercentValid = cashPercent + inKindPercent === 100;
-            const areaPercentValid = residentialPercent + hospitalityPercent + retailPercent === 100;
-
-            // ========== HELPER FUNCTIONS ==========
-            
-            const formatCurrency = (value) => {
-                return new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                }).format(value);
-            };
-            
-            const formatNumber = (value) => {
-                return new Intl.NumberFormat('en-US', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                }).format(value);
-            };
-            
-            const calculateProjectEndDate = () => {
-                const start = new Date(projectStart);
-                // Calculate total months (convert years to months if annual model)
-                const totalMonths = (modelType === 'monthly' ? 
-                    constructionPeriods + operationsPeriods : 
-                    (constructionPeriods + operationsPeriods) * 12
-                ) - 1; // Subtract 1 as per EOMONTH formula
-                
-                // Add months to start date
-                start.setMonth(start.getMonth() + totalMonths);
-                
-                // Get last day of that month (EOMONTH)
-                const endDate = new Date(start.getFullYear(), start.getMonth() + 1, 0);
-                
-                return endDate.toISOString().split('T')[0];
+            const formatNumber = (num) => {
+                if (!num || num === 0) return '0';
+                if (Math.abs(num) >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+                if (Math.abs(num) >= 1000) return (num / 1000).toFixed(0) + 'K';
+                return num.toFixed(0);
             };
 
             return (
-                <div className="min-h-screen pb-12">
+                <div className="min-h-screen">
                     {/* Header */}
-                    <div className="gradient-bg text-white py-8 px-6 shadow-lg">
-                        <div className="max-w-7xl mx-auto">
-                            <h1 className="text-4xl font-bold mb-2">Real Estate Financial Modeling Platform</h1>
-                            <p className="text-blue-100 text-lg">
-                                Complete Feasibility Analysis • {years} Year{years > 1 ? 's' : ''}
-                            </p>
+                    <div className="gradient-bg text-white p-6 shadow-lg">
+                        <h1 className="text-3xl font-bold">Real Estate Financial Modeling Platform</h1>
+                        <p className="text-sm opacity-90 mt-1">Module 1: Project Setup & Financial Structure</p>
+                    </div>
+
+                    {/* Navigation */}
+                    <div className="bg-white shadow-sm border-b">
+                        <div className="container mx-auto px-6">
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setActiveModule('overview')}
+                                    className={`px-6 py-4 font-semibold transition ${
+                                        activeModule === 'overview' ? 'tab-active' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Module 1
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="max-w-7xl mx-auto px-6 mt-8">
-                        {/* OVERVIEW */}
-                        {activeModule === 'overview' && (
-                            <div>
-                                <h2 className="text-3xl font-bold mb-8 text-gray-800">Select Module</h2>
-                                <div className="grid md:grid-cols-4 gap-6 mb-8">
-                                    <div className="module-card p-6 cursor-pointer" 
-                                         onClick={() => { setActiveModule('module1'); setActiveTab('timeline'); }}>
-                                        <div className="text-4xl mb-4">🏗️</div>
-                                        <h3 className="text-xl font-bold mb-2 text-gray-800">Module 1</h3>
-                                        <p className="text-gray-600 mb-4">Development Plan</p>
-                                        <p className="text-sm text-gray-500">Timeline, land, costs & financing</p>
-                                    </div>
-                                    
-                                    <div className="module-card p-6 opacity-50">
-                                        <div className="text-4xl mb-4">💰</div>
-                                        <h3 className="text-xl font-bold mb-2 text-gray-800">Module 2</h3>
-                                        <p className="text-gray-600 mb-4">Revenue & Operations</p>
-                                        <p className="text-sm text-gray-500">Coming next...</p>
-                                    </div>
-                                    
-                                    <div className="module-card p-6 opacity-50">
-                                        <div className="text-4xl mb-4">📊</div>
-                                        <h3 className="text-xl font-bold mb-2 text-gray-800">Module 3</h3>
-                                        <p className="text-gray-600 mb-4">Valuation & Exit</p>
-                                        <p className="text-sm text-gray-500">Coming next...</p>
-                                    </div>
-                                    
-                                    <div className="module-card p-6 opacity-50">
-                                        <div className="text-4xl mb-4">📈</div>
-                                        <h3 className="text-xl font-bold mb-2 text-gray-800">Module 4</h3>
-                                        <p className="text-gray-600 mb-4">Financial Statements</p>
-                                        <p className="text-sm text-gray-500">Coming next...</p>
-                                    </div>
-                                </div>
-
-                                <div className="module-card p-8">
-                                    <h2 className="text-2xl font-bold mb-6 text-gray-800">Project Summary: {displayProjectName}</h2>
-                                    <div className="grid md:grid-cols-3 gap-6">
-                                        <div>
-                                            <p className="text-sm text-gray-600 mb-1">Project Type</p>
-                                            <p className="text-2xl font-bold text-gray-800 capitalize">{formatProjectType(projectType)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-600 mb-1">Model Type</p>
-                                            <p className="text-2xl font-bold text-blue-600 capitalize">{modelType}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-600 mb-1">Total Land Area</p>
-                                            <p className="text-2xl font-bold text-green-600">{formatNumber(totalLandArea)} sqm</p>
-                                        </div>
-                                    </div>
-                                </div>
+                    {/* Module 1 Content */}
+                    {activeModule === 'overview' && (
+                        <div className="container mx-auto px-6 py-6">
+                            {/* Sub Navigation */}
+                            <div className="bg-white rounded-lg shadow-sm p-2 mb-6 flex gap-2">
+                                <button
+                                    onClick={() => setActiveTab('timeline')}
+                                    className={`px-4 py-2 rounded font-medium transition ${
+                                        activeTab === 'timeline' ? 'bg-purple-600 text-white' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Project Details & Timeline
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('area')}
+                                    className={`px-4 py-2 rounded font-medium transition ${
+                                        activeTab === 'area' ? 'bg-purple-600 text-white' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Land & Area
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('costs')}
+                                    className={`px-4 py-2 rounded font-medium transition ${
+                                        activeTab === 'costs' ? 'bg-purple-600 text-white' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Development Costs
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('financing')}
+                                    className={`px-4 py-2 rounded font-medium transition ${
+                                        activeTab === 'financing' ? 'bg-purple-600 text-white' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Financing
+                                </button>
                             </div>
-                        )}
 
-                        {/* MODULE 1 */}
-                        {activeModule === 'module1' && (
                             <div>
-                                <div className="flex items-center justify-between mb-6">
-                                    <button 
-                                        onClick={() => setActiveModule('overview')} 
-                                        className="text-blue-600 hover:text-blue-800 font-medium"
-                                    >
-                                        ← Back to Overview
-                                    </button>
-                                    <h2 className="text-3xl font-bold text-gray-800">Module 1: Development Plan</h2>
-                                    <div></div>
-                                </div>
-
-                                {/* Tabs */}
-                                <div className="bg-white rounded-lg shadow-sm mb-6">
-                                    <div className="flex border-b overflow-x-auto">
-                                        {['timeline', 'land', 'costs', 'financing'].map(tab => (
-                                            <button
-                                                key={tab}
-                                                onClick={() => setActiveTab(tab)}
-                                                className={`px-6 py-4 font-medium transition-all whitespace-nowrap ${
-                                                    activeTab === tab ? 'tab-active' : 'text-gray-600 hover:text-blue-600'
-                                                }`}
-                                            >
-                                                {tab === 'timeline' && '📅 Project Details & Timeline'}
-                                                {tab === 'land' && '🏗️ Land & Area'}
-                                                {tab === 'costs' && '💰 Development Costs'}
-                                                {tab === 'financing' && '🏦 Financing'}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* TIMELINE TAB */}
+                                {/* Timeline Tab - keeping original implementation */}
                                 {activeTab === 'timeline' && (
                                     <div className="module-card p-6">
-                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Project Details and Timeline</h3>
-                                        
-                                        <div className="grid md:grid-cols-2 gap-6 mb-8">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Project Details & Timeline</h3>
+                                        <div className="grid grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
                                                 <input
@@ -1662,7 +239,6 @@
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                                                 />
                                             </div>
-                                            
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">Project Type</label>
                                                 <select
@@ -1675,7 +251,6 @@
                                                     <option value="mixed-use">Mixed-Use</option>
                                                 </select>
                                             </div>
-                                            
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">Model Type</label>
                                                 <select
@@ -1686,11 +261,7 @@
                                                     <option value="monthly">Monthly</option>
                                                     <option value="annual">Annual</option>
                                                 </select>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    🔄 Affects all schedules. Switching converts periods automatically.
-                                                </p>
                                             </div>
-                                            
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">Project Start Date</label>
                                                 <input
@@ -1700,606 +271,572 @@
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                                                 />
                                             </div>
-                                            
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Construction Period ({modelType === 'monthly' ? 'months' : 'years'})
+                                                    Construction Periods ({modelType === 'monthly' ? 'Months' : 'Years'})
                                                 </label>
                                                 <input
                                                     type="number"
                                                     value={constructionPeriods}
-                                                    onChange={(e) => setConstructionPeriods(Number(e.target.value))}
+                                                    onChange={(e) => setConstructionPeriods(parseInt(e.target.value) || 0)}
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                    min="1"
                                                 />
                                             </div>
-                                            
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Operations Period ({modelType === 'monthly' ? 'months' : 'years'})
+                                                    Operations Periods ({modelType === 'monthly' ? 'Months' : 'Years'})
                                                 </label>
                                                 <input
                                                     type="number"
                                                     value={operationsPeriods}
-                                                    onChange={(e) => setOperationsPeriods(Number(e.target.value))}
+                                                    onChange={(e) => setOperationsPeriods(parseInt(e.target.value) || 0)}
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                    min="1"
                                                 />
                                             </div>
                                         </div>
-                                        
-                                        <div className="p-4 bg-blue-50 rounded-lg">
-                                            <div className="grid md:grid-cols-3 gap-4">
-                                                <div>
-                                                    <p className="text-sm text-blue-800 font-semibold">Total Duration</p>
-                                                    <p className="text-lg font-bold text-blue-900">
-                                                        {totalPeriods} {periodLabel}s ({years} Years)
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm text-blue-800 font-semibold">Project End Date</p>
-                                                    <p className="text-lg font-bold text-blue-900">
-                                                        {calculateProjectEndDate()}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm text-blue-800 font-semibold">Breakdown</p>
-                                                    <p className="text-sm text-blue-900">
-                                                        Construction: {constructionPeriods} | Operations: {operationsPeriods}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
                                 )}
 
-                                {/* LAND & AREA TAB */}
-                                {activeTab === 'land' && (
-                                    <div className="space-y-6">
-                                        {/* Land Acquisition */}
-                                        <div className="module-card p-6">
-                                            <h3 className="text-2xl font-bold mb-6 text-gray-800">Land Acquisition</h3>
-                                            
-                                            <div className="grid md:grid-cols-2 gap-6 mb-4">
+                                {/* Area Tab - Simplified working version */}
+                                {activeTab === 'area' && (
+                                    <div className="module-card p-6">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Land & Area Allocation</h3>
+                                        
+                                        <div className="mb-8">
+                                            <h4 className="text-lg font-bold text-gray-700 mb-4">Land Acquisition</h4>
+                                            <div className="grid grid-cols-4 gap-4">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Total Land Area (sqm)
-                                                    </label>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Total Land Area (sqm)</label>
                                                     <input
                                                         type="number"
                                                         value={totalLandArea}
-                                                        onChange={(e) => setTotalLandArea(Number(e.target.value))}
+                                                        onChange={(e) => setTotalLandArea(parseFloat(e.target.value) || 0)}
                                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                                        min="0"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Land Value per SQM ($)
-                                                    </label>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Land Value (per sqm)</label>
                                                     <input
                                                         type="number"
                                                         value={landValuePerSqm}
-                                                        onChange={(e) => setLandValuePerSqm(Number(e.target.value))}
+                                                        onChange={(e) => setLandValuePerSqm(parseFloat(e.target.value) || 0)}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Cash %</label>
+                                                    <input
+                                                        type="number"
+                                                        value={cashPercent}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value) || 0;
+                                                            setCashPercent(val);
+                                                            setInKindPercent(100 - val);
+                                                        }}
                                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                                                         min="0"
+                                                        max="100"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">In-Kind %</label>
+                                                    <input
+                                                        type="number"
+                                                        value={inKindPercent}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value) || 0;
+                                                            setInKindPercent(val);
+                                                            setCashPercent(100 - val);
+                                                        }}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                        min="0"
+                                                        max="100"
                                                     />
                                                 </div>
                                             </div>
-                                            
-                                            <div className="table-container">
-                                                <table>
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Acquisition Type</th>
-                                                            <th>%</th>
-                                                            <th>Area (sqm)</th>
-                                                            <th>Value ($)</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr>
-                                                            <td>Cash Purchase</td>
-                                                            <td>
-                                                                <input
-                                                                    type="number"
-                                                                    value={cashPercent}
-                                                                    onChange={(e) => setCashPercent(Number(e.target.value))}
-                                                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                                                                    min="0"
-                                                                    max="100"
-                                                                />
-                                                            </td>
-                                                            <td>{formatNumber(cashLandArea)}</td>
-                                                            <td>{formatCurrency(cashLandValue)}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>In-Kind Contribution</td>
-                                                            <td>
-                                                                <input
-                                                                    type="number"
-                                                                    value={inKindPercent}
-                                                                    onChange={(e) => setInKindPercent(Number(e.target.value))}
-                                                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                                                                    min="0"
-                                                                    max="100"
-                                                                />
-                                                            </td>
-                                                            <td>{formatNumber(inKindLandArea)}</td>
-                                                            <td>{formatCurrency(inKindLandValue)}</td>
-                                                        </tr>
-                                                        <tr className="total-row">
-                                                            <td>TOTAL</td>
-                                                            <td className={landPercentValid ? 'success' : 'warning'}>
-                                                                {cashPercent + inKindPercent}%
-                                                            </td>
-                                                            <td>{formatNumber(totalLandArea)}</td>
-                                                            <td>{formatCurrency(totalLandValue)}</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
+                                            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                                    <div>
+                                                        <span className="text-gray-600">Total Value: </span>
+                                                        <span className="font-bold">${formatNumber(totalLandValue)}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">Cash Value: </span>
+                                                        <span className="font-bold text-green-600">${formatNumber(cashValue)}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">In-Kind Value: </span>
+                                                        <span className="font-bold text-blue-600">${formatNumber(inKindValue)}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            
-                                            {!landPercentValid && (
-                                                <p className="text-sm text-red-600 mt-2">
-                                                    ⚠️ Land percentages must total exactly 100%
-                                                </p>
-                                            )}
                                         </div>
 
-                                        {/* Area Allocation */}
-                                        <div className="module-card p-6">
-                                            <h3 className="text-2xl font-bold mb-6 text-gray-800">Area Allocation by Asset Class</h3>
-                                            
-                                            <div className="table-container mb-6">
-                                                <table>
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Asset Class</th>
-                                                            <th>Allocation %</th>
-                                                            <th>Total Area (sqm)</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr>
-                                                            <td>Residential</td>
-                                                            <td>
-                                                                <input
-                                                                    type="number"
-                                                                    value={residentialPercent}
-                                                                    onChange={(e) => setResidentialPercent(Number(e.target.value))}
-                                                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                                                                    min="0"
-                                                                    max="100"
-                                                                />
-                                                            </td>
-                                                            <td>{formatNumber(residentialTotalArea)}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>Hospitality</td>
-                                                            <td>
-                                                                <input
-                                                                    type="number"
-                                                                    value={hospitalityPercent}
-                                                                    onChange={(e) => setHospitalityPercent(Number(e.target.value))}
-                                                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                                                                    min="0"
-                                                                    max="100"
-                                                                />
-                                                            </td>
-                                                            <td>{formatNumber(hospitalityTotalArea)}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>Retail</td>
-                                                            <td>
-                                                                <input
-                                                                    type="number"
-                                                                    value={retailPercent}
-                                                                    onChange={(e) => setRetailPercent(Number(e.target.value))}
-                                                                    className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                                                                    min="0"
-                                                                    max="100"
-                                                                />
-                                                            </td>
-                                                            <td>{formatNumber(retailTotalArea)}</td>
-                                                        </tr>
-                                                        <tr className="total-row">
-                                                            <td>TOTAL</td>
-                                                            <td className={areaPercentValid ? 'success' : 'warning'}>
-                                                                {residentialPercent + hospitalityPercent + retailPercent}%
-                                                            </td>
-                                                            <td>{formatNumber(totalLandArea)}</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                            
-                                            {!areaPercentValid && (
-                                                <p className="text-sm text-red-600 mb-4">
-                                                    ⚠️ Area percentages must total exactly 100%
-                                                </p>
-                                            )}
-                                            
-                                            {/* Residential Breakdown */}
-                                            <div className="mb-6">
-                                                <h4 className="text-lg font-bold text-gray-700 mb-3">Residential - Area Breakdown</h4>
-                                                <div className="table-container">
-                                                    <table>
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Metric</th>
-                                                                <th>Value</th>
-                                                                <th>Calculation</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr>
-                                                                <td>Total Allocated Area</td>
-                                                                <td>{formatNumber(residentialTotalArea)} sqm</td>
-                                                                <td>{residentialPercent}% of total land</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>Roads/Open Area %</td>
-                                                                <td>
-                                                                    <input
-                                                                        type="number"
-                                                                        value={residentialRoadsPercent}
-                                                                        onChange={(e) => setResidentialRoadsPercent(Number(e.target.value))}
-                                                                        className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                                                                        min="0"
-                                                                        max="100"
-                                                                    />
-                                                                </td>
-                                                                <td>User input</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>Roads/Open Area</td>
-                                                                <td>{formatNumber(residentialRoadsArea)} sqm</td>
-                                                                <td>{residentialRoadsPercent}% of allocated area</td>
-                                                            </tr>
-                                                            <tr className="bg-green-50">
-                                                                <td><strong>Net Developable Area</strong></td>
-                                                                <td><strong>{formatNumber(residentialNetArea)} sqm</strong></td>
-                                                                <td>Total - Roads/Open</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="tooltip">
-                                                                    GFA (Gross Floor Area)
-                                                                    <span className="tooltiptext">
-                                                                        GFA = Net Area × FAR (Floor Area Ratio). 
-                                                                        Current FAR: {residentialFAR}
-                                                                    </span>
-                                                                </td>
-                                                                <td>
-                                                                    {formatNumber(residentialGFA)} sqm
-                                                                    <span className="text-xs text-gray-500 ml-2">
-                                                                        (FAR: 
-                                                                        <input
-                                                                            type="number"
-                                                                            value={residentialFAR}
-                                                                            onChange={(e) => setResidentialFAR(Number(e.target.value))}
-                                                                            className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center ml-1"
-                                                                            step="0.1"
-                                                                            min="0"
-                                                                        />)
-                                                                    </span>
-                                                                </td>
-                                                                <td>Net Area × FAR</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="tooltip">
-                                                                    BUA (Built-Up Area)
-                                                                    <span className="tooltiptext">
-                                                                        BUA = GFA × Efficiency Ratio. 
-                                                                        Current Efficiency: {(residentialEfficiency * 100).toFixed(0)}%
-                                                                    </span>
-                                                                </td>
-                                                                <td>
-                                                                    {formatNumber(residentialBUA)} sqm
-                                                                    <span className="text-xs text-gray-500 ml-2">
-                                                                        (Eff: 
-                                                                        <input
-                                                                            type="number"
-                                                                            value={(residentialEfficiency * 100).toFixed(0)}
-                                                                            onChange={(e) => setResidentialEfficiency(Number(e.target.value) / 100)}
-                                                                            className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center ml-1"
-                                                                            min="0"
-                                                                            max="100"
-                                                                        />%)
-                                                                    </span>
-                                                                </td>
-                                                                <td>GFA × Efficiency %</td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
+                                        <div>
+                                            <h4 className="text-lg font-bold text-gray-700 mb-4">Area Allocation by Asset</h4>
+                                            <div className="grid grid-cols-3 gap-4 mb-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Residential %</label>
+                                                    <input
+                                                        type="number"
+                                                        value={residentialPercent}
+                                                        onChange={(e) => setResidentialPercent(parseFloat(e.target.value) || 0)}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Hospitality %</label>
+                                                    <input
+                                                        type="number"
+                                                        value={hospitalityPercent}
+                                                        onChange={(e) => setHospitalityPercent(parseFloat(e.target.value) || 0)}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Retail %</label>
+                                                    <input
+                                                        type="number"
+                                                        value={retailPercent}
+                                                        onChange={(e) => setRetailPercent(parseFloat(e.target.value) || 0)}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                                    />
                                                 </div>
                                             </div>
-                                            
-                                            {/* Hospitality Breakdown */}
-                                            <div className="mb-6">
-                                                <h4 className="text-lg font-bold text-gray-700 mb-3">Hospitality - Area Breakdown</h4>
-                                                <div className="table-container">
-                                                    <table>
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Metric</th>
-                                                                <th>Value</th>
-                                                                <th>Calculation</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr>
-                                                                <td>Total Allocated Area</td>
-                                                                <td>{formatNumber(hospitalityTotalArea)} sqm</td>
-                                                                <td>{hospitalityPercent}% of total land</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>Roads/Open Area %</td>
-                                                                <td>
-                                                                    <input
-                                                                        type="number"
-                                                                        value={hospitalityRoadsPercent}
-                                                                        onChange={(e) => setHospitalityRoadsPercent(Number(e.target.value))}
-                                                                        className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                                                                        min="0"
-                                                                        max="100"
-                                                                    />
-                                                                </td>
-                                                                <td>User input</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>Roads/Open Area</td>
-                                                                <td>{formatNumber(hospitalityRoadsArea)} sqm</td>
-                                                                <td>{hospitalityRoadsPercent}% of allocated area</td>
-                                                            </tr>
-                                                            <tr className="bg-green-50">
-                                                                <td><strong>Net Developable Area</strong></td>
-                                                                <td><strong>{formatNumber(hospitalityNetArea)} sqm</strong></td>
-                                                                <td>Total - Roads/Open</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="tooltip">
-                                                                    GFA (Gross Floor Area)
-                                                                    <span className="tooltiptext">
-                                                                        GFA = Net Area × FAR. Current FAR: {hospitalityFAR}
-                                                                    </span>
-                                                                </td>
-                                                                <td>
-                                                                    {formatNumber(hospitalityGFA)} sqm
-                                                                    <span className="text-xs text-gray-500 ml-2">
-                                                                        (FAR: 
-                                                                        <input
-                                                                            type="number"
-                                                                            value={hospitalityFAR}
-                                                                            onChange={(e) => setHospitalityFAR(Number(e.target.value))}
-                                                                            className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center ml-1"
-                                                                            step="0.1"
-                                                                            min="0"
-                                                                        />)
-                                                                    </span>
-                                                                </td>
-                                                                <td>Net Area × FAR</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="tooltip">
-                                                                    BUA (Built-Up Area)
-                                                                    <span className="tooltiptext">
-                                                                        BUA = GFA × Efficiency. Current: {(hospitalityEfficiency * 100).toFixed(0)}%
-                                                                    </span>
-                                                                </td>
-                                                                <td>
-                                                                    {formatNumber(hospitalityBUA)} sqm
-                                                                    <span className="text-xs text-gray-500 ml-2">
-                                                                        (Eff: 
-                                                                        <input
-                                                                            type="number"
-                                                                            value={(hospitalityEfficiency * 100).toFixed(0)}
-                                                                            onChange={(e) => setHospitalityEfficiency(Number(e.target.value) / 100)}
-                                                                            className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center ml-1"
-                                                                            min="0"
-                                                                            max="100"
-                                                                        />%)
-                                                                    </span>
-                                                                </td>
-                                                                <td>GFA × Efficiency %</td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
+
+                                            {/* Residential Details */}
+                                            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                                                <h5 className="font-bold text-gray-700 mb-3">Residential - {formatNumber(residentialTotalArea)} sqm</h5>
+                                                <div className="grid grid-cols-5 gap-3 text-sm">
+                                                    <div>
+                                                        <span className="text-gray-600">Roads %: </span>
+                                                        <input
+                                                            type="number"
+                                                            value={residentialRoadsPercent}
+                                                            onChange={(e) => setResidentialRoadsPercent(parseFloat(e.target.value) || 0)}
+                                                            className="w-16 px-2 py-1 border border-gray-300 rounded"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">Net Area: </span>
+                                                        <span className="font-bold">{formatNumber(residentialNetArea)}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">GFA: </span>
+                                                        <span className="font-bold">{formatNumber(residentialGFA)}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">BUA: </span>
+                                                        <span className="font-bold">{formatNumber(residentialBUA)}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">FAR: </span>
+                                                        <input
+                                                            type="number"
+                                                            value={residentialFAR}
+                                                            onChange={(e) => setResidentialFAR(parseFloat(e.target.value) || 0)}
+                                                            className="w-16 px-2 py-1 border border-gray-300 rounded"
+                                                            step="0.1"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
-                                            
-                                            {/* Retail Breakdown */}
-                                            <div>
-                                                <h4 className="text-lg font-bold text-gray-700 mb-3">Retail - Area Breakdown</h4>
-                                                <div className="table-container">
-                                                    <table>
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Metric</th>
-                                                                <th>Value</th>
-                                                                <th>Calculation</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr>
-                                                                <td>Total Allocated Area</td>
-                                                                <td>{formatNumber(retailTotalArea)} sqm</td>
-                                                                <td>{retailPercent}% of total land</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>Roads/Open Area %</td>
-                                                                <td>
-                                                                    <input
-                                                                        type="number"
-                                                                        value={retailRoadsPercent}
-                                                                        onChange={(e) => setRetailRoadsPercent(Number(e.target.value))}
-                                                                        className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                                                                        min="0"
-                                                                        max="100"
-                                                                    />
-                                                                </td>
-                                                                <td>User input</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>Roads/Open Area</td>
-                                                                <td>{formatNumber(retailRoadsArea)} sqm</td>
-                                                                <td>{retailRoadsPercent}% of allocated area</td>
-                                                            </tr>
-                                                            <tr className="bg-green-50">
-                                                                <td><strong>Net Developable Area</strong></td>
-                                                                <td><strong>{formatNumber(retailNetArea)} sqm</strong></td>
-                                                                <td>Total - Roads/Open</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="tooltip">
-                                                                    GFA (Gross Floor Area)
-                                                                    <span className="tooltiptext">
-                                                                        GFA = Net Area × FAR. Current FAR: {retailFAR}
-                                                                    </span>
-                                                                </td>
-                                                                <td>
-                                                                    {formatNumber(retailGFA)} sqm
-                                                                    <span className="text-xs text-gray-500 ml-2">
-                                                                        (FAR: 
-                                                                        <input
-                                                                            type="number"
-                                                                            value={retailFAR}
-                                                                            onChange={(e) => setRetailFAR(Number(e.target.value))}
-                                                                            className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center ml-1"
-                                                                            step="0.1"
-                                                                            min="0"
-                                                                        />)
-                                                                    </span>
-                                                                </td>
-                                                                <td>Net Area × FAR</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="tooltip">
-                                                                    BUA (Built-Up Area)
-                                                                    <span className="tooltiptext">
-                                                                        BUA = GFA × Efficiency. Current: {(retailEfficiency * 100).toFixed(0)}%
-                                                                    </span>
-                                                                </td>
-                                                                <td>
-                                                                    {formatNumber(retailBUA)} sqm
-                                                                    <span className="text-xs text-gray-500 ml-2">
-                                                                        (Eff: 
-                                                                        <input
-                                                                            type="number"
-                                                                            value={(retailEfficiency * 100).toFixed(0)}
-                                                                            onChange={(e) => setRetailEfficiency(Number(e.target.value) / 100)}
-                                                                            className="w-16 px-1 py-0.5 border border-gray-300 rounded text-center ml-1"
-                                                                            min="0"
-                                                                            max="100"
-                                                                        />%)
-                                                                    </span>
-                                                                </td>
-                                                                <td>GFA × Efficiency %</td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
+
+                                            {/* Hospitality Details */}
+                                            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                                                <h5 className="font-bold text-gray-700 mb-3">Hospitality - {formatNumber(hospitalityTotalArea)} sqm</h5>
+                                                <div className="grid grid-cols-5 gap-3 text-sm">
+                                                    <div>
+                                                        <span className="text-gray-600">Roads %: </span>
+                                                        <input
+                                                            type="number"
+                                                            value={hospitalityRoadsPercent}
+                                                            onChange={(e) => setHospitalityRoadsPercent(parseFloat(e.target.value) || 0)}
+                                                            className="w-16 px-2 py-1 border border-gray-300 rounded"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">Net Area: </span>
+                                                        <span className="font-bold">{formatNumber(hospitalityNetArea)}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">GFA: </span>
+                                                        <span className="font-bold">{formatNumber(hospitalityGFA)}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">BUA: </span>
+                                                        <span className="font-bold">{formatNumber(hospitalityBUA)}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">FAR: </span>
+                                                        <input
+                                                            type="number"
+                                                            value={hospitalityFAR}
+                                                            onChange={(e) => setHospitalityFAR(parseFloat(e.target.value) || 0)}
+                                                            className="w-16 px-2 py-1 border border-gray-300 rounded"
+                                                            step="0.1"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Retail Details */}
+                                            <div className="p-4 bg-gray-50 rounded-lg">
+                                                <h5 className="font-bold text-gray-700 mb-3">Retail - {formatNumber(retailTotalArea)} sqm</h5>
+                                                <div className="grid grid-cols-5 gap-3 text-sm">
+                                                    <div>
+                                                        <span className="text-gray-600">Roads %: </span>
+                                                        <input
+                                                            type="number"
+                                                            value={retailRoadsPercent}
+                                                            onChange={(e) => setRetailRoadsPercent(parseFloat(e.target.value) || 0)}
+                                                            className="w-16 px-2 py-1 border border-gray-300 rounded"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">Net Area: </span>
+                                                        <span className="font-bold">{formatNumber(retailNetArea)}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">GFA: </span>
+                                                        <span className="font-bold">{formatNumber(retailGFA)}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">BUA: </span>
+                                                        <span className="font-bold">{formatNumber(retailBUA)}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-600">FAR: </span>
+                                                        <input
+                                                            type="number"
+                                                            value={retailFAR}
+                                                            onChange={(e) => setRetailFAR(parseFloat(e.target.value) || 0)}
+                                                            className="w-16 px-2 py-1 border border-gray-300 rounded"
+                                                            step="0.1"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* COSTS TAB - Full Implementation */}
+                                {/* Development Costs Tab */}
                                 {activeTab === 'costs' && (
-                                    <div className="space-y-8">
-                                        <DevelopmentCostsSection 
-                                            assetType="Residential"
-                                            totalArea={residentialTotalArea}
-                                            netArea={residentialNetArea}
-                                            gfa={residentialGFA}
-                                            bua={residentialBUA}
-                                            landCashPortion={residentialLandValue * (cashPercent / 100)}
-                                            constructionPeriods={constructionPeriods}
-                                            modelType={modelType}
-                                        />
-                                        <DevelopmentCostsSection 
-                                            assetType="Hospitality"
-                                            totalArea={hospitalityTotalArea}
-                                            netArea={hospitalityNetArea}
-                                            gfa={hospitalityGFA}
-                                            bua={hospitalityBUA}
-                                            landCashPortion={hospitalityLandValue * (cashPercent / 100)}
-                                            constructionPeriods={constructionPeriods}
-                                            modelType={modelType}
-                                        />
-                                        <DevelopmentCostsSection 
-                                            assetType="Retail"
-                                            totalArea={retailTotalArea}
-                                            netArea={retailNetArea}
-                                            gfa={retailGFA}
-                                            bua={retailBUA}
-                                            landCashPortion={retailLandValue * (cashPercent / 100)}
-                                            constructionPeriods={constructionPeriods}
-                                            modelType={modelType}
-                                        />
+                                    <div className="module-card p-6">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Development Costs - Simple Summary</h3>
+                                        
+                                        <div className="space-y-6">
+                                            {/* Residential Summary */}
+                                            <div className="p-4 bg-blue-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Residential</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>Land (Cash Portion):</span>
+                                                        <span className="font-bold">${formatNumber(residentialLandValue * (cashPercent / 100))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Infrastructure ({formatNumber(residentialNetArea)} sqm × $500):</span>
+                                                        <span className="font-bold">${formatNumber(residentialNetArea * 500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Construction ({formatNumber(residentialBUA)} sqm × $1,500):</span>
+                                                        <span className="font-bold">${formatNumber(residentialBUA * 1500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-t pt-2 mt-2">
+                                                        <span className="font-bold">Total CAPEX:</span>
+                                                        <span className="font-bold text-blue-600 text-lg">
+                                                            ${formatNumber((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500))}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Hospitality Summary */}
+                                            <div className="p-4 bg-green-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Hospitality</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>Land (Cash Portion):</span>
+                                                        <span className="font-bold">${formatNumber(hospitalityLandValue * (cashPercent / 100))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Infrastructure ({formatNumber(hospitalityNetArea)} sqm × $500):</span>
+                                                        <span className="font-bold">${formatNumber(hospitalityNetArea * 500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Construction ({formatNumber(hospitalityBUA)} sqm × $1,500):</span>
+                                                        <span className="font-bold">${formatNumber(hospitalityBUA * 1500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-t pt-2 mt-2">
+                                                        <span className="font-bold">Total CAPEX:</span>
+                                                        <span className="font-bold text-green-600 text-lg">
+                                                            ${formatNumber((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500))}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Retail Summary */}
+                                            <div className="p-4 bg-purple-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Retail</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>Land (Cash Portion):</span>
+                                                        <span className="font-bold">${formatNumber(retailLandValue * (cashPercent / 100))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Infrastructure ({formatNumber(retailNetArea)} sqm × $500):</span>
+                                                        <span className="font-bold">${formatNumber(retailNetArea * 500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Construction ({formatNumber(retailBUA)} sqm × $1,500):</span>
+                                                        <span className="font-bold">${formatNumber(retailBUA * 1500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-t pt-2 mt-2">
+                                                        <span className="font-bold">Total CAPEX:</span>
+                                                        <span className="font-bold text-purple-600 text-lg">
+                                                            ${formatNumber((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500))}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Grand Total */}
+                                            <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="font-bold text-xl">TOTAL PROJECT CAPEX:</span>
+                                                    <span className="font-bold text-3xl">
+                                                        ${formatNumber(
+                                                            (residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500) +
+                                                            (hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500) +
+                                                            (retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500)
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
-                                {/* FINANCING TAB - Full Implementation */}
+                                {/* Financing Tab */}
                                 {activeTab === 'financing' && (
-                                    <div className="space-y-8">
-                                        <FinancingSection 
-                                            assetType="Residential"
-                                            capexData={(() => {
-                                                // Placeholder - In production, this would pull from Development Costs
-                                                const landCash = residentialLandValue * (cashPercent / 100);
-                                                return [
-                                                    { name: 'Land (Cash Portion)', total: landCash, amounts: Array(constructionPeriods).fill(0).map((_, i) => i === 0 ? landCash : 0) },
-                                                    { name: 'Infrastructure Development', total: residentialNetArea * 500, amounts: Array(constructionPeriods).fill(0).map((_, i) => i >= 1 && i <= 3 ? (residentialNetArea * 500) / 3 : 0) },
-                                                    { name: 'Construction Cost', total: residentialBUA * 1500, amounts: Array(constructionPeriods).fill(0).map((_, i) => i >= 3 && i <= 8 ? (residentialBUA * 1500) / 6 : 0) },
-                                                    { name: 'Professional Fees', total: (residentialBUA * 1500) * 0.08, amounts: Array(constructionPeriods).fill((residentialBUA * 1500) * 0.08 / constructionPeriods) },
-                                                    { name: 'Contingency', total: (landCash + residentialNetArea * 500 + residentialBUA * 1500) * 0.05, amounts: Array(constructionPeriods).fill((landCash + residentialNetArea * 500 + residentialBUA * 1500) * 0.05 / constructionPeriods) },
-                                                ];
-                                            })()}
-                                            constructionPeriods={constructionPeriods}
-                                            operationsPeriods={operationsPeriods}
-                                            modelType={modelType}
-                                            interestRate={interestRate}
-                                        />
-                                        <FinancingSection 
-                                            assetType="Hospitality"
-                                            capexData={(() => {
-                                                const landCash = hospitalityLandValue * (cashPercent / 100);
-                                                return [
-                                                    { name: 'Land (Cash Portion)', total: landCash, amounts: Array(constructionPeriods).fill(0).map((_, i) => i === 0 ? landCash : 0) },
-                                                    { name: 'Infrastructure Development', total: hospitalityNetArea * 500, amounts: Array(constructionPeriods).fill(0).map((_, i) => i >= 1 && i <= 3 ? (hospitalityNetArea * 500) / 3 : 0) },
-                                                    { name: 'Construction Cost', total: hospitalityBUA * 1500, amounts: Array(constructionPeriods).fill(0).map((_, i) => i >= 3 && i <= 8 ? (hospitalityBUA * 1500) / 6 : 0) },
-                                                    { name: 'Professional Fees', total: (hospitalityBUA * 1500) * 0.08, amounts: Array(constructionPeriods).fill((hospitalityBUA * 1500) * 0.08 / constructionPeriods) },
-                                                    { name: 'Contingency', total: (landCash + hospitalityNetArea * 500 + hospitalityBUA * 1500) * 0.05, amounts: Array(constructionPeriods).fill((landCash + hospitalityNetArea * 500 + hospitalityBUA * 1500) * 0.05 / constructionPeriods) },
-                                                ];
-                                            })()}
-                                            constructionPeriods={constructionPeriods}
-                                            operationsPeriods={operationsPeriods}
-                                            modelType={modelType}
-                                            interestRate={interestRate}
-                                        />
-                                        <FinancingSection 
-                                            assetType="Retail"
-                                            capexData={(() => {
-                                                const landCash = retailLandValue * (cashPercent / 100);
-                                                return [
-                                                    { name: 'Land (Cash Portion)', total: landCash, amounts: Array(constructionPeriods).fill(0).map((_, i) => i === 0 ? landCash : 0) },
-                                                    { name: 'Infrastructure Development', total: retailNetArea * 500, amounts: Array(constructionPeriods).fill(0).map((_, i) => i >= 1 && i <= 3 ? (retailNetArea * 500) / 3 : 0) },
-                                                    { name: 'Construction Cost', total: retailBUA * 1500, amounts: Array(constructionPeriods).fill(0).map((_, i) => i >= 3 && i <= 8 ? (retailBUA * 1500) / 6 : 0) },
-                                                    { name: 'Professional Fees', total: (retailBUA * 1500) * 0.08, amounts: Array(constructionPeriods).fill((retailBUA * 1500) * 0.08 / constructionPeriods) },
-                                                    { name: 'Contingency', total: (landCash + retailNetArea * 500 + retailBUA * 1500) * 0.05, amounts: Array(constructionPeriods).fill((landCash + retailNetArea * 500 + retailBUA * 1500) * 0.05 / constructionPeriods) },
-                                                ];
-                                            })()}
-                                            constructionPeriods={constructionPeriods}
-                                            operationsPeriods={operationsPeriods}
-                                            modelType={modelType}
-                                            interestRate={interestRate}
-                                        />
+                                    <div className="module-card p-6">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Financing Structure - Summary</h3>
+                                        
+                                        <div className="mb-6 p-4 bg-gray-100 rounded-lg">
+                                            <h4 className="font-bold mb-3">Debt & Equity Settings</h4>
+                                            <div className="grid grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Interest Rate (%)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={interestRate}
+                                                        onChange={(e) => setInterestRate(parseFloat(e.target.value) || 0)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded"
+                                                        step="0.1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Debt %</label>
+                                                    <div className="px-3 py-2 bg-white border border-gray-300 rounded font-bold">60%</div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Equity %</label>
+                                                    <div className="px-3 py-2 bg-white border border-gray-300 rounded font-bold">40%</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            {/* Residential Financing */}
+                                            <div className="p-4 bg-blue-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Residential</h4>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead>
+                                                            <tr className="bg-gray-700 text-white">
+                                                                <th className="p-2 text-left">Description</th>
+                                                                <th className="p-2 text-right">Total</th>
+                                                                <th className="p-2 text-right">Equity (40%)</th>
+                                                                <th className="p-2 text-right">Debt (60%)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Land</td>
+                                                                <td className="p-2 border text-right">${formatNumber(residentialLandValue * (cashPercent / 100))}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((residentialLandValue * (cashPercent / 100)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((residentialLandValue * (cashPercent / 100)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-gray-50">
+                                                                <td className="p-2 border">Infrastructure</td>
+                                                                <td className="p-2 border text-right">${formatNumber(residentialNetArea * 500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((residentialNetArea * 500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((residentialNetArea * 500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Construction</td>
+                                                                <td className="p-2 border text-right">${formatNumber(residentialBUA * 1500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((residentialBUA * 1500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((residentialBUA * 1500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-blue-600 text-white font-bold">
+                                                                <td className="p-3">TOTAL</td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500))}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            {/* Hospitality Financing */}
+                                            <div className="p-4 bg-green-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Hospitality</h4>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead>
+                                                            <tr className="bg-gray-700 text-white">
+                                                                <th className="p-2 text-left">Description</th>
+                                                                <th className="p-2 text-right">Total</th>
+                                                                <th className="p-2 text-right">Equity (40%)</th>
+                                                                <th className="p-2 text-right">Debt (60%)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Land</td>
+                                                                <td className="p-2 border text-right">${formatNumber(hospitalityLandValue * (cashPercent / 100))}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((hospitalityLandValue * (cashPercent / 100)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((hospitalityLandValue * (cashPercent / 100)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-gray-50">
+                                                                <td className="p-2 border">Infrastructure</td>
+                                                                <td className="p-2 border text-right">${formatNumber(hospitalityNetArea * 500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((hospitalityNetArea * 500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((hospitalityNetArea * 500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Construction</td>
+                                                                <td className="p-2 border text-right">${formatNumber(hospitalityBUA * 1500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((hospitalityBUA * 1500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((hospitalityBUA * 1500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-green-600 text-white font-bold">
+                                                                <td className="p-3">TOTAL</td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500))}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            {/* Retail Financing */}
+                                            <div className="p-4 bg-purple-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Retail</h4>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead>
+                                                            <tr className="bg-gray-700 text-white">
+                                                                <th className="p-2 text-left">Description</th>
+                                                                <th className="p-2 text-right">Total</th>
+                                                                <th className="p-2 text-right">Equity (40%)</th>
+                                                                <th className="p-2 text-right">Debt (60%)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Land</td>
+                                                                <td className="p-2 border text-right">${formatNumber(retailLandValue * (cashPercent / 100))}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((retailLandValue * (cashPercent / 100)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((retailLandValue * (cashPercent / 100)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-gray-50">
+                                                                <td className="p-2 border">Infrastructure</td>
+                                                                <td className="p-2 border text-right">${formatNumber(retailNetArea * 500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((retailNetArea * 500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((retailNetArea * 500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Construction</td>
+                                                                <td className="p-2 border text-right">${formatNumber(retailBUA * 1500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((retailBUA * 1500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((retailBUA * 1500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-purple-600 text-white font-bold">
+                                                                <td className="p-3">TOTAL</td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500))}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             );
         }
