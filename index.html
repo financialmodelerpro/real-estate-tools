@@ -191,24 +191,48 @@
             const [residentialMetrics, setResidentialMetrics] = useState([
                 { id: 1, name: 'Net Developable Area', type: 'calculated', formula: 'totalArea - roadsArea', isLocked: true },
                 { id: 2, name: 'FAR', type: 'input', value: 1.5, isLocked: false },
-                { id: 3, name: 'GFA', type: 'calculated', formula: 'netArea × FAR', isLocked: false },
+                { id: 3, name: 'GFA', type: 'calculated', formula: 'netArea × FAR', isLocked: false, baseArea: 'netDevelopable' },
                 { id: 4, name: 'Efficiency %', type: 'input', value: 85, isLocked: false },
-                { id: 5, name: 'BUA', type: 'calculated', formula: 'GFA × Efficiency%', isLocked: false }
+                { id: 5, name: 'BUA', type: 'calculated', formula: 'GFA × Efficiency%', isLocked: false, baseArea: 'gfa' }
             ]);
             const [hospitalityMetrics, setHospitalityMetrics] = useState([
                 { id: 1, name: 'Net Developable Area', type: 'calculated', formula: 'totalArea - roadsArea', isLocked: true },
                 { id: 2, name: 'FAR', type: 'input', value: 1.2, isLocked: false },
-                { id: 3, name: 'GFA', type: 'calculated', formula: 'netArea × FAR', isLocked: false },
+                { id: 3, name: 'GFA', type: 'calculated', formula: 'netArea × FAR', isLocked: false, baseArea: 'netDevelopable' },
                 { id: 4, name: 'Efficiency %', type: 'input', value: 80, isLocked: false },
-                { id: 5, name: 'BUA', type: 'calculated', formula: 'GFA × Efficiency%', isLocked: false }
+                { id: 5, name: 'BUA', type: 'calculated', formula: 'GFA × Efficiency%', isLocked: false, baseArea: 'gfa' }
             ]);
             const [retailMetrics, setRetailMetrics] = useState([
                 { id: 1, name: 'Net Developable Area', type: 'calculated', formula: 'totalArea - roadsArea', isLocked: true },
                 { id: 2, name: 'FAR', type: 'input', value: 1.0, isLocked: false },
-                { id: 3, name: 'GFA', type: 'calculated', formula: 'netArea × FAR', isLocked: false },
+                { id: 3, name: 'GFA', type: 'calculated', formula: 'netArea × FAR', isLocked: false, baseArea: 'netDevelopable' },
                 { id: 4, name: 'Efficiency %', type: 'input', value: 90, isLocked: false },
-                { id: 5, name: 'BUA', type: 'calculated', formula: 'GFA × Efficiency%', isLocked: false }
+                { id: 5, name: 'BUA', type: 'calculated', formula: 'GFA × Efficiency%', isLocked: false, baseArea: 'gfa' }
             ]);
+            
+            // Functions to manage dynamic rows
+            const addMetricRow = (assetType, setMetrics, metrics) => {
+                const newId = Math.max(...metrics.map(m => m.id)) + 1;
+                const newMetric = {
+                    id: newId,
+                    name: 'Custom Metric',
+                    type: 'input',
+                    value: 0,
+                    isLocked: false,
+                    baseArea: 'netDevelopable'
+                };
+                setMetrics([...metrics, newMetric]);
+            };
+            
+            const deleteMetricRow = (metricId, setMetrics, metrics) => {
+                setMetrics(metrics.filter(m => m.id !== metricId));
+            };
+            
+            const updateMetricBaseArea = (metricId, newBaseArea, setMetrics, metrics) => {
+                setMetrics(metrics.map(m => 
+                    m.id === metricId ? { ...m, baseArea: newBaseArea } : m
+                ));
+            };
             
             // Financing
             const [interestRate, setInterestRate] = useState(7.5);
@@ -759,7 +783,7 @@
                                                         </tr>
                                                         <tr className="bg-blue-50">
                                                             <td className="p-2 border">In-Kind Contribution</td>
-                                                            <td className="p-2 border text-right font-bold text-blue-700">{formatNumber(inKindValue)}</td>
+                                                            <td className="p-2 border text-right font-bold text-gray-800">{formatNumber(inKindValue)}</td>
                                                             <td className="p-2 border">{formatNumber(totalLandValue)} × {inKindPercent}%</td>
                                                         </tr>
                                                     </tbody>
@@ -832,16 +856,20 @@
                                                             <tr className="bg-gray-700 text-white">
                                                                 <th className="p-2 text-left">Metric</th>
                                                                 <th className="p-2 text-center">Input</th>
+                                                                <th className="p-2 text-center">Base Area</th>
                                                                 <th className="p-2 text-right">Value (sqm)</th>
                                                                 <th className="p-2 text-left">Calculation</th>
+                                                                <th className="p-2 text-center">Actions</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             <tr className="bg-blue-50">
                                                                 <td className="p-2 border font-medium">Total Allocated Area</td>
                                                                 <td className="p-2 border text-center">-</td>
-                                                                <td className="p-2 border text-right font-bold">{formatNumber(residentialTotalArea)}</td>
+                                                                <td className="p-2 border text-center">-</td>
+                                                                <td className="p-2 border text-right font-bold text-blue-700">{formatNumber(residentialTotalArea)}</td>
                                                                 <td className="p-2 border">{formatNumber(totalLandArea)} sqm × {residentialPercent}%</td>
+                                                                <td className="p-2 border text-center">-</td>
                                                             </tr>
                                                             <tr className="bg-white">
                                                                 <td className="p-2 border">Roads/Open Area</td>
@@ -855,14 +883,20 @@
                                                                         max="100"
                                                                     /> %
                                                                 </td>
+                                                                <td className="p-2 border text-center">-</td>
                                                                 <td className="p-2 border text-right">{formatNumber(residentialRoadsArea)}</td>
                                                                 <td className="p-2 border">{formatNumber(residentialTotalArea)} sqm × {residentialRoadsPercent}%</td>
+                                                                <td className="p-2 border text-center">
+                                                                    <button className="text-red-600 hover:text-red-800 text-xs">🗑️</button>
+                                                                </td>
                                                             </tr>
                                                             <tr className="bg-green-100">
                                                                 <td className="p-2 border font-bold">Net Developable Area</td>
                                                                 <td className="p-2 border text-center">-</td>
+                                                                <td className="p-2 border text-center">-</td>
                                                                 <td className="p-2 border text-right font-bold text-green-700">{formatNumber(residentialNetArea)}</td>
                                                                 <td className="p-2 border">{formatNumber(residentialTotalArea)} - {formatNumber(residentialRoadsArea)}</td>
+                                                                <td className="p-2 border text-center">-</td>
                                                             </tr>
                                                             <tr className="bg-white">
                                                                 <td className="p-2 border">GFA (Gross Floor Area)</td>
@@ -876,8 +910,17 @@
                                                                         min="0"
                                                                     />
                                                                 </td>
-                                                                <td className="p-2 border text-right font-bold">{formatNumber(residentialGFA)}</td>
+                                                                <td className="p-2 border text-center">
+                                                                    <select className="px-2 py-1 border border-gray-300 rounded text-xs">
+                                                                        <option value="netDevelopable">Net Developable</option>
+                                                                        <option value="totalAllocated">Total Allocated</option>
+                                                                    </select>
+                                                                </td>
+                                                                <td className="p-2 border text-right font-bold text-blue-700">{formatNumber(residentialGFA)}</td>
                                                                 <td className="p-2 border">{formatNumber(residentialNetArea)} sqm × {residentialFAR}</td>
+                                                                <td className="p-2 border text-center">
+                                                                    <button className="text-red-600 hover:text-red-800 text-xs">🗑️</button>
+                                                                </td>
                                                             </tr>
                                                             <tr className="bg-blue-100">
                                                                 <td className="p-2 border font-bold">BUA (Built-Up Area)</td>
@@ -891,11 +934,29 @@
                                                                         max="100"
                                                                     /> %
                                                                 </td>
+                                                                <td className="p-2 border text-center">
+                                                                    <select className="px-2 py-1 border border-gray-300 rounded text-xs">
+                                                                        <option value="gfa">GFA</option>
+                                                                        <option value="netDevelopable">Net Developable</option>
+                                                                        <option value="totalAllocated">Total Allocated</option>
+                                                                    </select>
+                                                                </td>
                                                                 <td className="p-2 border text-right font-bold text-blue-700">{formatNumber(residentialBUA)}</td>
                                                                 <td className="p-2 border">{formatNumber(residentialGFA)} sqm × {(residentialEfficiency * 100).toFixed(0)}%</td>
+                                                                <td className="p-2 border text-center">
+                                                                    <button className="text-red-600 hover:text-red-800 text-xs">🗑️</button>
+                                                                </td>
                                                             </tr>
                                                         </tbody>
                                                     </table>
+                                                    <div className="mt-3">
+                                                        <button 
+                                                            onClick={() => addMetricRow('residential', setResidentialMetrics, residentialMetrics)}
+                                                            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm font-semibold"
+                                                        >
+                                                            + Add Row
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -910,16 +971,20 @@
                                                             <tr className="bg-gray-700 text-white">
                                                                 <th className="p-2 text-left">Metric</th>
                                                                 <th className="p-2 text-center">Input</th>
+                                                                <th className="p-2 text-center">Base Area</th>
                                                                 <th className="p-2 text-right">Value (sqm)</th>
                                                                 <th className="p-2 text-left">Calculation</th>
+                                                                <th className="p-2 text-center">Actions</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             <tr className="bg-green-50">
                                                                 <td className="p-2 border font-medium">Total Allocated Area</td>
                                                                 <td className="p-2 border text-center">-</td>
-                                                                <td className="p-2 border text-right font-bold">{formatNumber(hospitalityTotalArea)}</td>
+                                                                <td className="p-2 border text-center">-</td>
+                                                                <td className="p-2 border text-right font-bold text-green-700">{formatNumber(hospitalityTotalArea)}</td>
                                                                 <td className="p-2 border">{formatNumber(totalLandArea)} sqm × {hospitalityPercent}%</td>
+                                                                <td className="p-2 border text-center">-</td>
                                                             </tr>
                                                             <tr className="bg-white">
                                                                 <td className="p-2 border">Roads/Open Area</td>
@@ -933,14 +998,20 @@
                                                                         max="100"
                                                                     /> %
                                                                 </td>
+                                                                <td className="p-2 border text-center">-</td>
                                                                 <td className="p-2 border text-right">{formatNumber(hospitalityRoadsArea)}</td>
                                                                 <td className="p-2 border">{formatNumber(hospitalityTotalArea)} sqm × {hospitalityRoadsPercent}%</td>
+                                                                <td className="p-2 border text-center">
+                                                                    <button className="text-red-600 hover:text-red-800 text-xs">🗑️</button>
+                                                                </td>
                                                             </tr>
                                                             <tr className="bg-green-100">
                                                                 <td className="p-2 border font-bold">Net Developable Area</td>
                                                                 <td className="p-2 border text-center">-</td>
+                                                                <td className="p-2 border text-center">-</td>
                                                                 <td className="p-2 border text-right font-bold text-green-700">{formatNumber(hospitalityNetArea)}</td>
                                                                 <td className="p-2 border">{formatNumber(hospitalityTotalArea)} - {formatNumber(hospitalityRoadsArea)}</td>
+                                                                <td className="p-2 border text-center">-</td>
                                                             </tr>
                                                             <tr className="bg-white">
                                                                 <td className="p-2 border">GFA (Gross Floor Area)</td>
@@ -954,8 +1025,17 @@
                                                                         min="0"
                                                                     />
                                                                 </td>
-                                                                <td className="p-2 border text-right font-bold">{formatNumber(hospitalityGFA)}</td>
+                                                                <td className="p-2 border text-center">
+                                                                    <select className="px-2 py-1 border border-gray-300 rounded text-xs">
+                                                                        <option value="netDevelopable">Net Developable</option>
+                                                                        <option value="totalAllocated">Total Allocated</option>
+                                                                    </select>
+                                                                </td>
+                                                                <td className="p-2 border text-right font-bold text-green-700">{formatNumber(hospitalityGFA)}</td>
                                                                 <td className="p-2 border">{formatNumber(hospitalityNetArea)} sqm × {hospitalityFAR}</td>
+                                                                <td className="p-2 border text-center">
+                                                                    <button className="text-red-600 hover:text-red-800 text-xs">🗑️</button>
+                                                                </td>
                                                             </tr>
                                                             <tr className="bg-green-100">
                                                                 <td className="p-2 border font-bold">BUA (Built-Up Area)</td>
@@ -969,11 +1049,29 @@
                                                                         max="100"
                                                                     /> %
                                                                 </td>
+                                                                <td className="p-2 border text-center">
+                                                                    <select className="px-2 py-1 border border-gray-300 rounded text-xs">
+                                                                        <option value="gfa">GFA</option>
+                                                                        <option value="netDevelopable">Net Developable</option>
+                                                                        <option value="totalAllocated">Total Allocated</option>
+                                                                    </select>
+                                                                </td>
                                                                 <td className="p-2 border text-right font-bold text-green-700">{formatNumber(hospitalityBUA)}</td>
                                                                 <td className="p-2 border">{formatNumber(hospitalityGFA)} sqm × {(hospitalityEfficiency * 100).toFixed(0)}%</td>
+                                                                <td className="p-2 border text-center">
+                                                                    <button className="text-red-600 hover:text-red-800 text-xs">🗑️</button>
+                                                                </td>
                                                             </tr>
                                                         </tbody>
                                                     </table>
+                                                    <div className="mt-3">
+                                                        <button 
+                                                            onClick={() => addMetricRow('hospitality', setHospitalityMetrics, hospitalityMetrics)}
+                                                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-semibold"
+                                                        >
+                                                            + Add Row
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -987,16 +1085,20 @@
                                                         <tr className="bg-gray-700 text-white">
                                                             <th className="p-2 text-left">Metric</th>
                                                             <th className="p-2 text-center">Input</th>
+                                                            <th className="p-2 text-center">Base Area</th>
                                                             <th className="p-2 text-right">Value (sqm)</th>
                                                             <th className="p-2 text-left">Calculation</th>
+                                                            <th className="p-2 text-center">Actions</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <tr className="bg-purple-50">
                                                             <td className="p-2 border font-medium">Total Allocated Area</td>
                                                             <td className="p-2 border text-center">-</td>
-                                                            <td className="p-2 border text-right font-bold">{formatNumber(retailTotalArea)}</td>
+                                                            <td className="p-2 border text-center">-</td>
+                                                            <td className="p-2 border text-right font-bold text-purple-700">{formatNumber(retailTotalArea)}</td>
                                                             <td className="p-2 border">{formatNumber(totalLandArea)} sqm × {retailPercent}%</td>
+                                                            <td className="p-2 border text-center">-</td>
                                                         </tr>
                                                         <tr className="bg-white">
                                                             <td className="p-2 border">Roads/Open Area</td>
@@ -1010,14 +1112,20 @@
                                                                     max="100"
                                                                 /> %
                                                             </td>
+                                                            <td className="p-2 border text-center">-</td>
                                                             <td className="p-2 border text-right">{formatNumber(retailRoadsArea)}</td>
                                                             <td className="p-2 border">{formatNumber(retailTotalArea)} sqm × {retailRoadsPercent}%</td>
+                                                            <td className="p-2 border text-center">
+                                                                <button className="text-red-600 hover:text-red-800 text-xs">🗑️</button>
+                                                            </td>
                                                         </tr>
                                                         <tr className="bg-purple-100">
                                                             <td className="p-2 border font-bold">Net Developable Area</td>
                                                             <td className="p-2 border text-center">-</td>
+                                                            <td className="p-2 border text-center">-</td>
                                                             <td className="p-2 border text-right font-bold text-purple-700">{formatNumber(retailNetArea)}</td>
                                                             <td className="p-2 border">{formatNumber(retailTotalArea)} - {formatNumber(retailRoadsArea)}</td>
+                                                            <td className="p-2 border text-center">-</td>
                                                         </tr>
                                                         <tr className="bg-white">
                                                             <td className="p-2 border">GFA (Gross Floor Area)</td>
@@ -1031,8 +1139,17 @@
                                                                     min="0"
                                                                 />
                                                             </td>
-                                                            <td className="p-2 border text-right font-bold">{formatNumber(retailGFA)}</td>
+                                                            <td className="p-2 border text-center">
+                                                                <select className="px-2 py-1 border border-gray-300 rounded text-xs">
+                                                                    <option value="netDevelopable">Net Developable</option>
+                                                                    <option value="totalAllocated">Total Allocated</option>
+                                                                </select>
+                                                            </td>
+                                                            <td className="p-2 border text-right font-bold text-purple-700">{formatNumber(retailGFA)}</td>
                                                             <td className="p-2 border">{formatNumber(retailNetArea)} sqm × {retailFAR}</td>
+                                                            <td className="p-2 border text-center">
+                                                                <button className="text-red-600 hover:text-red-800 text-xs">🗑️</button>
+                                                            </td>
                                                         </tr>
                                                         <tr className="bg-purple-100">
                                                             <td className="p-2 border font-bold">BUA (Built-Up Area)</td>
@@ -1046,11 +1163,29 @@
                                                                     max="100"
                                                                 /> %
                                                             </td>
+                                                            <td className="p-2 border text-center">
+                                                                <select className="px-2 py-1 border border-gray-300 rounded text-xs">
+                                                                    <option value="gfa">GFA</option>
+                                                                    <option value="netDevelopable">Net Developable</option>
+                                                                    <option value="totalAllocated">Total Allocated</option>
+                                                                </select>
+                                                            </td>
                                                             <td className="p-2 border text-right font-bold text-purple-700">{formatNumber(retailBUA)}</td>
                                                             <td className="p-2 border">{formatNumber(retailGFA)} sqm × {(retailEfficiency * 100).toFixed(0)}%</td>
+                                                            <td className="p-2 border text-center">
+                                                                <button className="text-red-600 hover:text-red-800 text-xs">🗑️</button>
+                                                            </td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
+                                                <div className="mt-3">
+                                                    <button 
+                                                        onClick={() => addMetricRow('retail', setRetailMetrics, retailMetrics)}
+                                                        className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded text-sm font-semibold"
+                                                    >
+                                                        + Add Row
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
