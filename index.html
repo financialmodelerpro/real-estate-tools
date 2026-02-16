@@ -272,7 +272,7 @@
             const [residentialCosts, setResidentialCosts] = useState([]);
             const [hospitalityCosts, setHospitalityCosts] = useState([]);
             const [retailCosts, setRetailCosts] = useState([]);
-            const [nextCostId, setNextCostId] = useState(6);
+            const [nextCostId, setNextCostId] = useState(13);
 
             // Initialize default residential costs
             useEffect(() => {
@@ -294,17 +294,6 @@
                         },
                         {
                             id: 2,
-                            name: 'Infrastructure Development',
-                            method: 'rate_total_area',
-                            value: 150,
-                            baseType: '',
-                            startPeriod: 1,
-                            endPeriod: 6,
-                            phasing: '30,25,20,15,7,3',
-                            canDelete: true
-                        },
-                        {
-                            id: 3,
                             name: 'Construction Cost',
                             method: 'rate_bua',
                             value: 1200,
@@ -315,28 +304,118 @@
                             canDelete: true
                         },
                         {
+                            id: 3,
+                            name: 'Infrastructure Cost',
+                            method: 'rate_total_area',
+                            value: 150,
+                            baseType: '',
+                            startPeriod: 1,
+                            endPeriod: 6,
+                            phasing: '30,25,20,15,7,3',
+                            canDelete: true
+                        },
+                        {
                             id: 4,
-                            name: 'Professional Fees',
+                            name: 'Landscaping Cost',
+                            method: 'rate_total_area',
+                            value: 50,
+                            baseType: '',
+                            startPeriod: 1,
+                            endPeriod: 6,
+                            phasing: '30,25,20,15,7,3',
+                            canDelete: true
+                        },
+                        {
+                            id: 5,
+                            name: 'Pre-Operating Expenses',
                             method: 'percent_base',
-                            value: 5,
-                            baseType: 'infra_construction',
+                            value: 2,
+                            baseType: 'construction_infra_landscaping',
                             startPeriod: 1,
                             endPeriod: constructionPeriods,
                             phasing: 'even',
                             canDelete: true
                         },
                         {
-                            id: 5,
-                            name: 'Contingency',
+                            id: 6,
+                            name: 'Professional Fee',
                             method: 'percent_base',
-                            value: 3,
-                            baseType: 'all_previous',
+                            value: 5,
+                            baseType: 'total_construction_excluding_land',
                             startPeriod: 1,
                             endPeriod: constructionPeriods,
                             phasing: 'even',
                             canDelete: true
+                        },
+                        {
+                            id: 7,
+                            name: 'Contingency Cost',
+                            method: 'percent_base',
+                            value: 3,
+                            baseType: 'total_construction_excluding_land',
+                            startPeriod: 1,
+                            endPeriod: constructionPeriods,
+                            phasing: 'even',
+                            canDelete: true
+                        },
+                        {
+                            id: 8,
+                            name: 'Developer Fee/Performance Fee',
+                            method: 'percent_base',
+                            value: 10,
+                            baseType: 'custom_selection',
+                            selectedCosts: [2, 3, 4], // Construction, Infrastructure, Landscaping
+                            startPeriod: 1,
+                            endPeriod: constructionPeriods,
+                            phasing: 'even',
+                            canDelete: true
+                        },
+                        {
+                            id: 9,
+                            name: 'Electricity Station',
+                            method: 'fixed',
+                            value: 500000,
+                            baseType: '',
+                            startPeriod: 3,
+                            endPeriod: 8,
+                            phasing: 'even',
+                            canDelete: true
+                        },
+                        {
+                            id: 10,
+                            name: 'Bridges',
+                            method: 'fixed',
+                            value: 750000,
+                            baseType: '',
+                            startPeriod: 2,
+                            endPeriod: 6,
+                            phasing: 'even',
+                            canDelete: true
+                        },
+                        {
+                            id: 11,
+                            name: 'Royal Commission Premium',
+                            method: 'percent_base',
+                            value: 2.5,
+                            baseType: 'land_cost',
+                            startPeriod: 0,
+                            endPeriod: 0,
+                            phasing: '100',
+                            canDelete: true
+                        },
+                        {
+                            id: 12,
+                            name: 'RETT (Real Estate Transfer Tax)',
+                            method: 'percent_base',
+                            value: 5,
+                            baseType: 'cash_land_value',
+                            startPeriod: 0,
+                            endPeriod: 0,
+                            phasing: '100',
+                            canDelete: true
                         }
                     ]);
+                    setNextCostId(13);
                 }
             }, []);
 
@@ -530,6 +609,54 @@
                         const constr = costs.find(c => c.name.toLowerCase().includes('construction'));
                         if (infra && infra.id !== cost.id) baseTotal += calculateItemTotal(infra, assetType);
                         if (constr && constr.id !== cost.id) baseTotal += calculateItemTotal(constr, assetType);
+                        break;
+                    case 'construction_infra_landscaping':
+                        // For Pre-Operating Expenses: Construction + Infrastructure + Landscaping
+                        const constr2 = costs.find(c => c.name.toLowerCase().includes('construction'));
+                        const infra2 = costs.find(c => c.name.toLowerCase().includes('infrastructure'));
+                        const landscape = costs.find(c => c.name.toLowerCase().includes('landscaping'));
+                        if (constr2 && constr2.id !== cost.id) baseTotal += calculateItemTotal(constr2, assetType);
+                        if (infra2 && infra2.id !== cost.id) baseTotal += calculateItemTotal(infra2, assetType);
+                        if (landscape && landscape.id !== cost.id) baseTotal += calculateItemTotal(landscape, assetType);
+                        break;
+                    case 'total_construction_excluding_land':
+                        // For Professional Fee & Contingency: All construction costs excluding Land
+                        costs.forEach(c => {
+                            if (c.id !== cost.id && c.id !== 1) { // Exclude self and Land (id=1)
+                                baseTotal += calculateItemTotal(c, assetType);
+                            }
+                        });
+                        break;
+                    case 'land_cost':
+                        // For Royal Commission Premium: Land cost only
+                        const landCost = costs.find(c => c.id === 1);
+                        if (landCost) {
+                            baseTotal = calculateItemTotal(landCost, assetType);
+                        }
+                        break;
+                    case 'cash_land_value':
+                        // For RETT: Cash portion of land value
+                        const areas = {
+                            residential: residentialTotalArea,
+                            hospitality: hospitalityTotalArea,
+                            retail: retailTotalArea
+                        };
+                        const cashLandArea = (totalLandArea * cashPercent) / 100;
+                        const assetCashLandValue = cashLandArea * landValuePerSqm * 
+                            (assetType === 'residential' ? residentialPercent : 
+                             assetType === 'hospitality' ? hospitalityPercent : retailPercent) / 100;
+                        baseTotal = assetCashLandValue;
+                        break;
+                    case 'custom_selection':
+                        // For Developer Fee: User-selected costs
+                        if (cost.selectedCosts && Array.isArray(cost.selectedCosts)) {
+                            cost.selectedCosts.forEach(selectedId => {
+                                const selectedCost = costs.find(c => c.id === selectedId);
+                                if (selectedCost && selectedCost.id !== cost.id) {
+                                    baseTotal += calculateItemTotal(selectedCost, assetType);
+                                }
+                            });
+                        }
                         break;
                     case 'all_previous':
                         const currentIndex = costs.findIndex(c => c.id === cost.id);
@@ -2146,15 +2273,44 @@
                                                                 </td>
                                                                 <td className="p-2">
                                                                     {cost.method === 'percent_base' ? (
-                                                                        <select
-                                                                            value={cost.baseType}
-                                                                            onChange={(e) => updateResidentialCost(cost.id, 'baseType', e.target.value)}
-                                                                        >
-                                                                            <option value="infrastructure_only">Infrastructure Only</option>
-                                                                            <option value="construction_only">Construction Only</option>
-                                                                            <option value="infra_construction">Infra + Construction</option>
-                                                                            <option value="all_previous">All Previous Costs</option>
-                                                                        </select>
+                                                                        <div>
+                                                                            <select
+                                                                                value={cost.baseType}
+                                                                                onChange={(e) => updateResidentialCost(cost.id, 'baseType', e.target.value)}
+                                                                                className="w-full mb-1"
+                                                                            >
+                                                                                <option value="infrastructure_only">Infrastructure Only</option>
+                                                                                <option value="construction_only">Construction Only</option>
+                                                                                <option value="infra_construction">Infra + Construction</option>
+                                                                                <option value="construction_infra_landscaping">Construction + Infra + Landscaping</option>
+                                                                                <option value="total_construction_excluding_land">Total Construction (Excl. Land)</option>
+                                                                                <option value="land_cost">Land Cost</option>
+                                                                                <option value="cash_land_value">Cash Land Value</option>
+                                                                                <option value="custom_selection">Custom Selection</option>
+                                                                                <option value="all_previous">All Previous Costs</option>
+                                                                            </select>
+                                                                            {cost.baseType === 'custom_selection' && (
+                                                                                <div className="text-xs">
+                                                                                    {residentialCosts.filter(c => c.id !== cost.id && c.id !== 1).map(c => (
+                                                                                        <label key={c.id} className="block">
+                                                                                            <input
+                                                                                                type="checkbox"
+                                                                                                checked={cost.selectedCosts?.includes(c.id)}
+                                                                                                onChange={(e) => {
+                                                                                                    const selected = cost.selectedCosts || [];
+                                                                                                    const newSelected = e.target.checked 
+                                                                                                        ? [...selected, c.id]
+                                                                                                        : selected.filter(id => id !== c.id);
+                                                                                                    updateResidentialCost(cost.id, 'selectedCosts', newSelected);
+                                                                                                }}
+                                                                                                className="mr-1"
+                                                                                            />
+                                                                                            {c.name}
+                                                                                        </label>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
                                                                     ) : (
                                                                         <span className="text-gray-400">N/A</span>
                                                                     )}
