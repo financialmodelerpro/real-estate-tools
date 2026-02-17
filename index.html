@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Real Estate Financial Modeling Platform - Module 1 Complete</title>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+   
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -129,6 +130,26 @@
             visibility: visible;
             opacity: 1;
         }
+        /* Development Costs specific styles */
+        .cost-input-table td {
+            text-align: left;
+            padding: 0.5rem;
+        }
+        .cost-input-table input, .cost-input-table select {
+            width: 100%;
+            padding: 0.375rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        .validation-error {
+            color: #dc2626;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+        .total-row td:first-child {
+            background: #dbeafe;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -245,11 +266,177 @@
                 ));
             };
             
-            // Land value calculations (used in Land & Area tab)
+            // Financing
+            const [interestRate, setInterestRate] = useState(7.5);
+            
+            // ============ DEVELOPMENT COSTS STATE ============
+            const [residentialCosts, setResidentialCosts] = useState([]);
+            const [hospitalityCosts, setHospitalityCosts] = useState([]);
+            const [retailCosts, setRetailCosts] = useState([]);
+            const [nextCostId, setNextCostId] = useState(13);
+
+            // Initialize default residential costs
+            useEffect(() => {
+                if (residentialCosts.length === 0) {
+                    const cashLandArea = (totalLandArea * cashPercent) / 100;
+                    const residentialLandValue = cashLandArea * landValuePerSqm * (residentialPercent / 100);
+
+                    setResidentialCosts([
+                        {
+                            id: 1,
+                            name: 'Land (Cash Portion)',
+                            method: 'fixed',
+                            value: residentialLandValue,
+                            baseType: '',
+                            startPeriod: 0,
+                            endPeriod: 0,
+                            phasing: '100',
+                            canDelete: false
+                        },
+                        {
+                            id: 2,
+                            name: 'Construction Cost',
+                            method: 'rate_bua',
+                            value: 1200,
+                            baseType: '',
+                            startPeriod: 7,
+                            endPeriod: constructionPeriods,
+                            phasing: 'even',
+                            canDelete: true
+                        },
+                        {
+                            id: 3,
+                            name: 'Infrastructure Cost',
+                            method: 'rate_total_area',
+                            value: 150,
+                            baseType: '',
+                            startPeriod: 1,
+                            endPeriod: 6,
+                            phasing: '30,25,20,15,7,3',
+                            canDelete: true
+                        },
+                        {
+                            id: 4,
+                            name: 'Landscaping Cost',
+                            method: 'rate_total_area',
+                            value: 50,
+                            baseType: '',
+                            startPeriod: 1,
+                            endPeriod: 6,
+                            phasing: '30,25,20,15,7,3',
+                            canDelete: true
+                        },
+                        {
+                            id: 5,
+                            name: 'Pre-Operating Expenses',
+                            method: 'percent_base',
+                            value: 2,
+                            baseType: 'construction_infra_landscaping',
+                            startPeriod: 1,
+                            endPeriod: constructionPeriods,
+                            phasing: 'even',
+                            canDelete: true
+                        },
+                        {
+                            id: 6,
+                            name: 'Professional Fee',
+                            method: 'percent_base',
+                            value: 5,
+                            baseType: 'total_construction_excluding_land',
+                            startPeriod: 1,
+                            endPeriod: constructionPeriods,
+                            phasing: 'even',
+                            canDelete: true
+                        },
+                        {
+                            id: 7,
+                            name: 'Contingency Cost',
+                            method: 'percent_base',
+                            value: 3,
+                            baseType: 'total_construction_excluding_land',
+                            startPeriod: 1,
+                            endPeriod: constructionPeriods,
+                            phasing: 'even',
+                            canDelete: true
+                        },
+                        {
+                            id: 8,
+                            name: 'Developer Fee/Performance Fee',
+                            method: 'percent_base',
+                            value: 10,
+                            baseType: 'custom_selection',
+                            selectedCosts: [2, 3, 4], // Construction, Infrastructure, Landscaping
+                            startPeriod: 1,
+                            endPeriod: constructionPeriods,
+                            phasing: 'even',
+                            canDelete: true
+                        },
+                        {
+                            id: 9,
+                            name: 'Electricity Station',
+                            method: 'fixed',
+                            value: 500000,
+                            baseType: '',
+                            startPeriod: 3,
+                            endPeriod: 8,
+                            phasing: 'even',
+                            canDelete: true
+                        },
+                        {
+                            id: 10,
+                            name: 'Bridges',
+                            method: 'fixed',
+                            value: 750000,
+                            baseType: '',
+                            startPeriod: 2,
+                            endPeriod: 6,
+                            phasing: 'even',
+                            canDelete: true
+                        },
+                        {
+                            id: 11,
+                            name: 'Royal Commission Premium',
+                            method: 'percent_base',
+                            value: 2.5,
+                            baseType: 'land_cost',
+                            startPeriod: 0,
+                            endPeriod: 0,
+                            phasing: '100',
+                            canDelete: true
+                        },
+                        {
+                            id: 12,
+                            name: 'RETT (Real Estate Transfer Tax)',
+                            method: 'percent_base',
+                            value: 5,
+                            baseType: 'cash_land_value',
+                            startPeriod: 0,
+                            endPeriod: 0,
+                            phasing: '100',
+                            canDelete: true
+                        }
+                    ]);
+                    setNextCostId(13);
+                }
+            }, []);
+
+            // Update Land cost when dependencies change
+            useEffect(() => {
+                if (residentialCosts.length > 0) {
+                    const cashLandArea = (totalLandArea * cashPercent) / 100;
+                    const residentialLandValue = cashLandArea * landValuePerSqm * (residentialPercent / 100);
+
+                    setResidentialCosts(prev => prev.map(cost => 
+                        cost.id === 1 ? { ...cost, value: residentialLandValue } : cost
+                    ));
+                }
+            }, [totalLandArea, landValuePerSqm, cashPercent, residentialPercent]);
+            
+            // Calculations
             const totalLandValue = totalLandArea * landValuePerSqm;
             const cashValue = (totalLandValue * cashPercent) / 100;
             const inKindValue = (totalLandValue * inKindPercent) / 100;
-
+            
             // Project end date calculation
             const calculateProjectEndDate = () => {
                 const startDate = new Date(projectStart);
@@ -300,6 +487,7 @@
                 residentialBUABaseValue = residentialTotalArea;
             }
             const residentialBUA = residentialBUABaseValue * residentialEfficiency;
+            const residentialLandValue = residentialTotalArea * landValuePerSqm;
             
             // Hospitality
             const hospitalityTotalArea = (totalLandArea * hospitalityPercent) / 100;
@@ -320,6 +508,7 @@
                 hospitalityBUABaseValue = hospitalityTotalArea;
             }
             const hospitalityBUA = hospitalityBUABaseValue * hospitalityEfficiency;
+            const hospitalityLandValue = hospitalityTotalArea * landValuePerSqm;
             
             // Retail
             const retailTotalArea = (totalLandArea * retailPercent) / 100;
@@ -340,6 +529,7 @@
                 retailBUABaseValue = retailTotalArea;
             }
             const retailBUA = retailBUABaseValue * retailEfficiency;
+            const retailLandValue = retailTotalArea * landValuePerSqm;
             
             const formatNumber = (num) => {
                 if (!num || num === 0) return '0';
@@ -350,6 +540,237 @@
                 if (!num || num === 0) return currency + ' 0';
                 return currency + ' ' + Math.round(num).toLocaleString('en-US');
             };
+            
+            // ============ DEVELOPMENT COSTS HELPER FUNCTIONS ============
+            
+            // Calculate total cost for a cost item
+            const calculateItemTotal = (cost, assetType = 'residential') => {
+                const areas = {
+                    residential: {
+                        total: residentialTotalArea,
+                        net: residentialNetArea,
+                        gfa: residentialGFA,
+                        bua: residentialBUA
+                    },
+                    hospitality: {
+                        total: hospitalityTotalArea,
+                        net: hospitalityNetArea,
+                        gfa: hospitalityGFA,
+                        bua: hospitalityBUA
+                    },
+                    retail: {
+                        total: retailTotalArea,
+                        net: retailNetArea,
+                        gfa: retailGFA,
+                        bua: retailBUA
+                    }
+                };
+
+                const area = areas[assetType];
+
+                switch (cost.method) {
+                    case 'fixed':
+                        return parseFloat(cost.value) || 0;
+                    case 'rate_total_area':
+                        return (parseFloat(cost.value) || 0) * area.total;
+                    case 'rate_net_area':
+                        return (parseFloat(cost.value) || 0) * area.net;
+                    case 'rate_gfa':
+                        return (parseFloat(cost.value) || 0) * area.gfa;
+                    case 'rate_bua':
+                        return (parseFloat(cost.value) || 0) * area.bua;
+                    case 'percent_base':
+                        return calculatePercentBase(cost, assetType);
+                    default:
+                        return 0;
+                }
+            };
+
+            // Calculate percentage of base costs
+            const calculatePercentBase = (cost, assetType = 'residential') => {
+                const costs = assetType === 'residential' ? residentialCosts : 
+                             assetType === 'hospitality' ? hospitalityCosts : retailCosts;
+                let baseTotal = 0;
+
+                switch (cost.baseType) {
+                    case 'infrastructure_only':
+                        const infraCost = costs.find(c => c.name.toLowerCase().includes('infrastructure'));
+                        if (infraCost && infraCost.id !== cost.id) {
+                            baseTotal = calculateItemTotal(infraCost, assetType);
+                        }
+                        break;
+                    case 'construction_only':
+                        const constrCost = costs.find(c => c.name.toLowerCase().includes('construction'));
+                        if (constrCost && constrCost.id !== cost.id) {
+                            baseTotal = calculateItemTotal(constrCost, assetType);
+                        }
+                        break;
+                    case 'infra_construction':
+                        const infra = costs.find(c => c.name.toLowerCase().includes('infrastructure'));
+                        const constr = costs.find(c => c.name.toLowerCase().includes('construction'));
+                        if (infra && infra.id !== cost.id) baseTotal += calculateItemTotal(infra, assetType);
+                        if (constr && constr.id !== cost.id) baseTotal += calculateItemTotal(constr, assetType);
+                        break;
+                    case 'construction_infra_landscaping':
+                        // For Pre-Operating Expenses: Construction + Infrastructure + Landscaping
+                        const constr2 = costs.find(c => c.name.toLowerCase().includes('construction'));
+                        const infra2 = costs.find(c => c.name.toLowerCase().includes('infrastructure'));
+                        const landscape = costs.find(c => c.name.toLowerCase().includes('landscaping'));
+                        if (constr2 && constr2.id !== cost.id) baseTotal += calculateItemTotal(constr2, assetType);
+                        if (infra2 && infra2.id !== cost.id) baseTotal += calculateItemTotal(infra2, assetType);
+                        if (landscape && landscape.id !== cost.id) baseTotal += calculateItemTotal(landscape, assetType);
+                        break;
+                    case 'total_construction_excluding_land':
+                        // For Professional Fee & Contingency: All construction costs excluding Land
+                        costs.forEach(c => {
+                            if (c.id !== cost.id && c.id !== 1) { // Exclude self and Land (id=1)
+                                baseTotal += calculateItemTotal(c, assetType);
+                            }
+                        });
+                        break;
+                    case 'land_cost':
+                        // For Royal Commission Premium: Land cost only
+                        const landCost = costs.find(c => c.id === 1);
+                        if (landCost) {
+                            baseTotal = calculateItemTotal(landCost, assetType);
+                        }
+                        break;
+                    case 'cash_land_value':
+                        // For RETT: Cash portion of land value
+                        const areas = {
+                            residential: residentialTotalArea,
+                            hospitality: hospitalityTotalArea,
+                            retail: retailTotalArea
+                        };
+                        const cashLandArea = (totalLandArea * cashPercent) / 100;
+                        const assetCashLandValue = cashLandArea * landValuePerSqm * 
+                            (assetType === 'residential' ? residentialPercent : 
+                             assetType === 'hospitality' ? hospitalityPercent : retailPercent) / 100;
+                        baseTotal = assetCashLandValue;
+                        break;
+                    case 'custom_selection':
+                        // For Developer Fee: User-selected costs
+                        if (cost.selectedCosts && Array.isArray(cost.selectedCosts)) {
+                            cost.selectedCosts.forEach(selectedId => {
+                                const selectedCost = costs.find(c => c.id === selectedId);
+                                if (selectedCost && selectedCost.id !== cost.id) {
+                                    baseTotal += calculateItemTotal(selectedCost, assetType);
+                                }
+                            });
+                        }
+                        break;
+                    case 'all_previous':
+                        const currentIndex = costs.findIndex(c => c.id === cost.id);
+                        if (currentIndex > 0) {
+                            baseTotal = costs.slice(0, currentIndex).reduce((sum, c) => 
+                                sum + calculateItemTotal(c, assetType), 0);
+                        }
+                        break;
+                    default:
+                        baseTotal = 0;
+                }
+
+                return baseTotal * ((parseFloat(cost.value) || 0) / 100);
+            };
+
+            // Validate phasing
+            const validatePhasing = (phasing, startPeriod, endPeriod) => {
+                if (phasing.toLowerCase() === 'even') return { valid: true, error: '' };
+
+                const periods = endPeriod - startPeriod + 1;
+                const values = phasing.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+
+                if (values.length !== periods) {
+                    return { 
+                        valid: false, 
+                        error: `Must have ${periods} values (one per period)` 
+                    };
+                }
+
+                const sum = values.reduce((a, b) => a + b, 0);
+                if (Math.abs(sum - 100) > 0.01) {
+                    return { 
+                        valid: false, 
+                        error: `Sum is ${sum.toFixed(1)}% (must be 100%)` 
+                    };
+                }
+
+                return { valid: true, error: '' };
+            };
+
+            // Distribute cost across periods based on phasing
+            const distributeCost = (cost, assetType = 'residential') => {
+                const total = calculateItemTotal(cost, assetType);
+                const distribution = Array(constructionPeriods + 1).fill(0);
+
+                if (cost.phasing.toLowerCase() === 'even') {
+                    const periods = cost.endPeriod - cost.startPeriod + 1;
+                    const amountPerPeriod = total / periods;
+                    for (let i = cost.startPeriod; i <= cost.endPeriod && i <= constructionPeriods; i++) {
+                        distribution[i] = amountPerPeriod;
+                    }
+                } else {
+                    const percentages = cost.phasing.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+                    percentages.forEach((pct, idx) => {
+                        const period = cost.startPeriod + idx;
+                        if (period <= constructionPeriods) {
+                            distribution[period] = total * (pct / 100);
+                        }
+                    });
+                }
+
+                return distribution;
+            };
+
+            // Add new cost item
+            const addResidentialCost = () => {
+                const newCost = {
+                    id: nextCostId,
+                    name: 'New Cost Item',
+                    method: 'fixed',
+                    value: 0,
+                    baseType: '',
+                    startPeriod: 1,
+                    endPeriod: constructionPeriods,
+                    phasing: 'even',
+                    canDelete: true
+                };
+                setResidentialCosts([...residentialCosts, newCost]);
+                setNextCostId(nextCostId + 1);
+            };
+
+            // Delete cost item
+            const deleteResidentialCost = (id) => {
+                setResidentialCosts(residentialCosts.filter(c => c.id !== id));
+            };
+
+            // Update cost item
+            const updateResidentialCost = (id, field, value) => {
+                setResidentialCosts(residentialCosts.map(cost => 
+                    cost.id === id ? { ...cost, [field]: value } : cost
+                ));
+            };
+
+            // Calculate CAPEX summary
+            const calculateResidentialCapex = () => {
+                const summary = residentialCosts.map(cost => ({
+                    name: cost.name,
+                    total: calculateItemTotal(cost, 'residential'),
+                    distribution: distributeCost(cost, 'residential')
+                }));
+
+                // Calculate totals per period
+                const periodTotals = Array(constructionPeriods + 1).fill(0);
+                summary.forEach(item => {
+                    item.distribution.forEach((amount, period) => {
+                        periodTotals[period] += amount;
+                    });
+                });
+
+                return { items: summary, totals: periodTotals };
+            };
+
+            const residentialCapex = calculateResidentialCapex();
             
             // Helper function to get base area name for display
             const getBaseAreaName = (baseAreaKey) => {
@@ -442,6 +863,14 @@
                                 >
                                     Module 1
                                 </button>
+                                <button
+                                    onClick={() => setActiveModule('devcosts')}
+                                    className={`px-6 py-4 font-semibold transition ${
+                                        activeModule === 'devcosts' ? 'tab-active' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Development Costs
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -528,6 +957,8 @@
                                     <ul className="text-sm text-gray-600 space-y-2">
                                         <li>✓ Project Details & Timeline</li>
                                         <li>✓ Land & Area Allocation</li>
+                                        <li>✓ Development Costs</li>
+                                        <li>✓ Financing Structure</li>
                                     </ul>
                                     <button className="mt-4 w-full btn-primary text-white px-4 py-2 rounded-lg font-medium">
                                         Open Module
@@ -1452,11 +1883,97 @@
                                 {/* Development Costs Tab */}
                                 {activeTab === 'costs' && (
                                     <div className="module-card p-6">
-                                        <div className="flex flex-col items-center justify-center py-24 text-center">
-                                            <div className="text-6xl mb-6">🚧</div>
-                                            <h3 className="text-3xl font-bold text-gray-700 mb-3">Development Costs</h3>
-                                            <p className="text-gray-500 text-lg">Coming Soon</p>
-                                            <p className="text-gray-400 text-sm mt-2">This module is currently under development</p>
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Development Costs - Simple Summary</h3>
+                                        
+                                        <div className="space-y-6">
+                                            {/* Residential Summary */}
+                                            <div className="p-4 bg-blue-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Residential</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>Land (Cash Portion):</span>
+                                                        <span className="font-bold">${formatNumber(residentialLandValue * (cashPercent / 100))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Infrastructure ({formatNumber(residentialNetArea)} sqm × $500):</span>
+                                                        <span className="font-bold">${formatNumber(residentialNetArea * 500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Construction ({formatNumber(residentialBUA)} sqm × $1,500):</span>
+                                                        <span className="font-bold">${formatNumber(residentialBUA * 1500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-t pt-2 mt-2">
+                                                        <span className="font-bold">Total CAPEX:</span>
+                                                        <span className="font-bold text-blue-600 text-lg">
+                                                            ${formatNumber((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500))}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Hospitality Summary */}
+                                            <div className="p-4 bg-green-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Hospitality</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>Land (Cash Portion):</span>
+                                                        <span className="font-bold">${formatNumber(hospitalityLandValue * (cashPercent / 100))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Infrastructure ({formatNumber(hospitalityNetArea)} sqm × $500):</span>
+                                                        <span className="font-bold">${formatNumber(hospitalityNetArea * 500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Construction ({formatNumber(hospitalityBUA)} sqm × $1,500):</span>
+                                                        <span className="font-bold">${formatNumber(hospitalityBUA * 1500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-t pt-2 mt-2">
+                                                        <span className="font-bold">Total CAPEX:</span>
+                                                        <span className="font-bold text-green-600 text-lg">
+                                                            ${formatNumber((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500))}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Retail Summary */}
+                                            <div className="p-4 bg-purple-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Retail</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>Land (Cash Portion):</span>
+                                                        <span className="font-bold">${formatNumber(retailLandValue * (cashPercent / 100))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Infrastructure ({formatNumber(retailNetArea)} sqm × $500):</span>
+                                                        <span className="font-bold">${formatNumber(retailNetArea * 500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Construction ({formatNumber(retailBUA)} sqm × $1,500):</span>
+                                                        <span className="font-bold">${formatNumber(retailBUA * 1500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-t pt-2 mt-2">
+                                                        <span className="font-bold">Total CAPEX:</span>
+                                                        <span className="font-bold text-purple-600 text-lg">
+                                                            ${formatNumber((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500))}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Grand Total */}
+                                            <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="font-bold text-xl">TOTAL PROJECT CAPEX:</span>
+                                                    <span className="font-bold text-3xl">
+                                                        ${formatNumber(
+                                                            (residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500) +
+                                                            (hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500) +
+                                                            (retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500)
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -1464,11 +1981,460 @@
                                 {/* Financing Tab */}
                                 {activeTab === 'financing' && (
                                     <div className="module-card p-6">
-                                        <div className="flex flex-col items-center justify-center py-24 text-center">
-                                            <div className="text-6xl mb-6">🚧</div>
-                                            <h3 className="text-3xl font-bold text-gray-700 mb-3">Financing</h3>
-                                            <p className="text-gray-500 text-lg">Coming Soon</p>
-                                            <p className="text-gray-400 text-sm mt-2">This module is currently under development</p>
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Financing Structure - Summary</h3>
+                                        
+                                        <div className="mb-6 p-4 bg-gray-100 rounded-lg">
+                                            <h4 className="font-bold mb-3">Debt & Equity Settings</h4>
+                                            <div className="grid grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Interest Rate (%)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={interestRate}
+                                                        onChange={(e) => setInterestRate(parseFloat(e.target.value) || 0)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded"
+                                                        step="0.1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Debt %</label>
+                                                    <div className="px-3 py-2 bg-white border border-gray-300 rounded font-bold">60%</div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-2">Equity %</label>
+                                                    <div className="px-3 py-2 bg-white border border-gray-300 rounded font-bold">40%</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            {/* Residential Financing */}
+                                            <div className="p-4 bg-blue-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Residential</h4>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead>
+                                                            <tr className="bg-gray-700 text-white">
+                                                                <th className="p-2 text-left">Description</th>
+                                                                <th className="p-2 text-right">Total</th>
+                                                                <th className="p-2 text-right">Equity (40%)</th>
+                                                                <th className="p-2 text-right">Debt (60%)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Land</td>
+                                                                <td className="p-2 border text-right">${formatNumber(residentialLandValue * (cashPercent / 100))}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((residentialLandValue * (cashPercent / 100)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((residentialLandValue * (cashPercent / 100)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-gray-50">
+                                                                <td className="p-2 border">Infrastructure</td>
+                                                                <td className="p-2 border text-right">${formatNumber(residentialNetArea * 500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((residentialNetArea * 500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((residentialNetArea * 500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Construction</td>
+                                                                <td className="p-2 border text-right">${formatNumber(residentialBUA * 1500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((residentialBUA * 1500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((residentialBUA * 1500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-blue-600 text-white font-bold">
+                                                                <td className="p-3">TOTAL</td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500))}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            {/* Hospitality Financing */}
+                                            <div className="p-4 bg-green-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Hospitality</h4>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead>
+                                                            <tr className="bg-gray-700 text-white">
+                                                                <th className="p-2 text-left">Description</th>
+                                                                <th className="p-2 text-right">Total</th>
+                                                                <th className="p-2 text-right">Equity (40%)</th>
+                                                                <th className="p-2 text-right">Debt (60%)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Land</td>
+                                                                <td className="p-2 border text-right">${formatNumber(hospitalityLandValue * (cashPercent / 100))}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((hospitalityLandValue * (cashPercent / 100)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((hospitalityLandValue * (cashPercent / 100)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-gray-50">
+                                                                <td className="p-2 border">Infrastructure</td>
+                                                                <td className="p-2 border text-right">${formatNumber(hospitalityNetArea * 500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((hospitalityNetArea * 500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((hospitalityNetArea * 500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Construction</td>
+                                                                <td className="p-2 border text-right">${formatNumber(hospitalityBUA * 1500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((hospitalityBUA * 1500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((hospitalityBUA * 1500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-green-600 text-white font-bold">
+                                                                <td className="p-3">TOTAL</td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500))}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            {/* Retail Financing */}
+                                            <div className="p-4 bg-purple-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Retail</h4>
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-sm">
+                                                        <thead>
+                                                            <tr className="bg-gray-700 text-white">
+                                                                <th className="p-2 text-left">Description</th>
+                                                                <th className="p-2 text-right">Total</th>
+                                                                <th className="p-2 text-right">Equity (40%)</th>
+                                                                <th className="p-2 text-right">Debt (60%)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Land</td>
+                                                                <td className="p-2 border text-right">${formatNumber(retailLandValue * (cashPercent / 100))}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((retailLandValue * (cashPercent / 100)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((retailLandValue * (cashPercent / 100)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-gray-50">
+                                                                <td className="p-2 border">Infrastructure</td>
+                                                                <td className="p-2 border text-right">${formatNumber(retailNetArea * 500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((retailNetArea * 500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((retailNetArea * 500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-white">
+                                                                <td className="p-2 border">Construction</td>
+                                                                <td className="p-2 border text-right">${formatNumber(retailBUA * 1500)}</td>
+                                                                <td className="p-2 border text-right text-green-600 font-semibold">
+                                                                    ${formatNumber((retailBUA * 1500) * 0.4)}
+                                                                </td>
+                                                                <td className="p-2 border text-right text-red-600 font-semibold">
+                                                                    ${formatNumber((retailBUA * 1500) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr className="bg-purple-600 text-white font-bold">
+                                                                <td className="p-3">TOTAL</td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500))}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500)) * 0.4)}
+                                                                </td>
+                                                                <td className="p-3 text-right">
+                                                                    ${formatNumber(((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500)) * 0.6)}
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DEVELOPMENT COSTS MODULE */}
+                    {activeModule === 'devcosts' && (
+                        <div className="container mx-auto px-6 py-6">
+                            <div className="space-y-8">
+                                {/* RESIDENTIAL DEVELOPMENT COSTS */}
+                                {showResidential && (
+                                    <div className="module-card p-6">
+                                        <div className="flex justify-between items-center mb-6">
+                                            <h2 className="text-2xl font-bold text-blue-800">RESIDENTIAL DEVELOPMENT COSTS</h2>
+                                            <button
+                                                onClick={addResidentialCost}
+                                                className="btn-primary text-white px-4 py-2 rounded-lg font-semibold"
+                                            >
+                                                + Add Cost Item
+                                            </button>
+                                        </div>
+
+                                        {/* Cost Input Table */}
+                                        <div className="overflow-x-auto mb-8">
+                                            <table className="w-full cost-input-table">
+                                                <thead>
+                                                    <tr className="bg-gray-700 text-white">
+                                                        <th className="p-3 text-left">Cost Item Name</th>
+                                                        <th className="p-3 text-left">Calculation Method</th>
+                                                        <th className="p-3 text-left">Value</th>
+                                                        <th className="p-3 text-left">Base Cost Type</th>
+                                                        <th className="p-3 text-center">Start Period</th>
+                                                        <th className="p-3 text-center">End Period</th>
+                                                        <th className="p-3 text-left">Phasing</th>
+                                                        <th className="p-3 text-right">Total Cost</th>
+                                                        <th className="p-3 text-center">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {residentialCosts.map((cost, idx) => {
+                                                        const validation = validatePhasing(cost.phasing, cost.startPeriod, cost.endPeriod);
+                                                        return (
+                                                            <tr key={cost.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                                <td className="p-2">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={cost.name}
+                                                                        onChange={(e) => updateResidentialCost(cost.id, 'name', e.target.value)}
+                                                                        disabled={!cost.canDelete}
+                                                                        className="w-full"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-2">
+                                                                    <select
+                                                                        value={cost.method}
+                                                                        onChange={(e) => updateResidentialCost(cost.id, 'method', e.target.value)}
+                                                                        disabled={!cost.canDelete}
+                                                                    >
+                                                                        <option value="fixed">Fixed Amount</option>
+                                                                        <option value="rate_total_area">Rate per SQM - Total Area</option>
+                                                                        <option value="rate_net_area">Rate per SQM - Net Area</option>
+                                                                        <option value="rate_gfa">Rate per SQM - GFA</option>
+                                                                        <option value="rate_bua">Rate per SQM - BUA</option>
+                                                                        <option value="percent_base">% of Base Costs</option>
+                                                                    </select>
+                                                                </td>
+                                                                <td className="p-2">
+                                                                    <div className="flex items-center">
+                                                                        {cost.method === 'percent_base' && <span className="mr-1">%</span>}
+                                                                        {cost.method.startsWith('rate_') && <span className="mr-1">$</span>}
+                                                                        <input
+                                                                            type="number"
+                                                                            value={cost.value}
+                                                                            onChange={(e) => updateResidentialCost(cost.id, 'value', parseFloat(e.target.value) || 0)}
+                                                                            disabled={cost.id === 1}
+                                                                            className="w-full"
+                                                                        />
+                                                                        {cost.method.startsWith('rate_') && <span className="ml-1">/sqm</span>}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="p-2">
+                                                                    {cost.method === 'percent_base' ? (
+                                                                        <div>
+                                                                            <select
+                                                                                value={cost.baseType}
+                                                                                onChange={(e) => updateResidentialCost(cost.id, 'baseType', e.target.value)}
+                                                                                className="w-full mb-1"
+                                                                            >
+                                                                                <option value="infrastructure_only">Infrastructure Only</option>
+                                                                                <option value="construction_only">Construction Only</option>
+                                                                                <option value="infra_construction">Infra + Construction</option>
+                                                                                <option value="construction_infra_landscaping">Construction + Infra + Landscaping</option>
+                                                                                <option value="total_construction_excluding_land">Total Construction (Excl. Land)</option>
+                                                                                <option value="land_cost">Land Cost</option>
+                                                                                <option value="cash_land_value">Cash Land Value</option>
+                                                                                <option value="custom_selection">Custom Selection</option>
+                                                                                <option value="all_previous">All Previous Costs</option>
+                                                                            </select>
+                                                                            {cost.baseType === 'custom_selection' && (
+                                                                                <div className="text-xs">
+                                                                                    {residentialCosts.filter(c => c.id !== cost.id && c.id !== 1).map(c => (
+                                                                                        <label key={c.id} className="block">
+                                                                                            <input
+                                                                                                type="checkbox"
+                                                                                                checked={cost.selectedCosts?.includes(c.id)}
+                                                                                                onChange={(e) => {
+                                                                                                    const selected = cost.selectedCosts || [];
+                                                                                                    const newSelected = e.target.checked 
+                                                                                                        ? [...selected, c.id]
+                                                                                                        : selected.filter(id => id !== c.id);
+                                                                                                    updateResidentialCost(cost.id, 'selectedCosts', newSelected);
+                                                                                                }}
+                                                                                                className="mr-1"
+                                                                                            />
+                                                                                            {c.name}
+                                                                                        </label>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-gray-400">N/A</span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="p-2 text-center">
+                                                                    <input
+                                                                        type="number"
+                                                                        value={cost.startPeriod}
+                                                                        onChange={(e) => updateResidentialCost(cost.id, 'startPeriod', parseInt(e.target.value) || 0)}
+                                                                        min="0"
+                                                                        max={constructionPeriods}
+                                                                        disabled={cost.id === 1}
+                                                                        className="w-20 text-center"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-2 text-center">
+                                                                    <input
+                                                                        type="number"
+                                                                        value={cost.endPeriod}
+                                                                        onChange={(e) => updateResidentialCost(cost.id, 'endPeriod', parseInt(e.target.value) || 0)}
+                                                                        min="0"
+                                                                        max={constructionPeriods}
+                                                                        disabled={cost.id === 1}
+                                                                        className="w-20 text-center"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-2">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={cost.phasing}
+                                                                        onChange={(e) => updateResidentialCost(cost.id, 'phasing', e.target.value)}
+                                                                        disabled={cost.id === 1}
+                                                                        className="w-full"
+                                                                        placeholder="30,25,20,15,7,3 or 'even'"
+                                                                    />
+                                                                    {!validation.valid && (
+                                                                        <div className="validation-error">{validation.error}</div>
+                                                                    )}
+                                                                </td>
+                                                                <td className="p-2 text-right font-semibold">
+                                                                    ${formatNumber(calculateItemTotal(cost, 'residential'))}
+                                                                </td>
+                                                                <td className="p-2 text-center">
+                                                                    {cost.canDelete && (
+                                                                        <button
+                                                                            onClick={() => deleteResidentialCost(cost.id)}
+                                                                            className="text-red-600 hover:text-red-800 text-xl"
+                                                                        >
+                                                                            🗑️
+                                                                        </button>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* CAPEX Summary Table */}
+                                        <div>
+                                            <h3 className="text-xl font-bold text-blue-800 mb-4">RESIDENTIAL CAPEX SUMMARY</h3>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-sm">
+                                                    <thead>
+                                                        <tr className="bg-gray-700 text-white">
+                                                            <th className="p-3 text-left">Description</th>
+                                                            <th className="p-3 text-right">Total</th>
+                                                            {Array.from({ length: constructionPeriods + 1 }, (_, i) => (
+                                                                <th key={i} className="p-3 text-right whitespace-nowrap">
+                                                                    {modelType === 'monthly' ? 'Month' : 'Year'} {i}
+                                                                </th>
+                                                            ))}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {residentialCapex.items.map((item, idx) => (
+                                                            <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                                <td className="p-2 font-medium">{item.name}</td>
+                                                                <td className="p-2 text-right font-semibold">
+                                                                    ${formatNumber(item.total)}
+                                                                </td>
+                                                                {item.distribution.map((amount, periodIdx) => (
+                                                                    <td key={periodIdx} className="p-2 text-right">
+                                                                        {amount > 0 ? `$${formatNumber(amount)}` : '-'}
+                                                                    </td>
+                                                                ))}
+                                                            </tr>
+                                                        ))}
+                                                        <tr className="total-row">
+                                                            <td className="p-3 font-bold">TOTAL CAPEX</td>
+                                                            <td className="p-3 text-right font-bold">
+                                                                ${formatNumber(residentialCapex.totals.reduce((a, b) => a + b, 0))}
+                                                            </td>
+                                                            {residentialCapex.totals.map((total, idx) => (
+                                                                <td key={idx} className="p-3 text-right font-bold">
+                                                                    {total > 0 ? `$${formatNumber(total)}` : '-'}
+                                                                </td>
+                                                            ))}
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Placeholder for Hospitality - Will be added after testing */}
+                                {showHospitality && (
+                                    <div className="module-card p-6">
+                                        <h2 className="text-2xl font-bold text-green-800 mb-4">HOSPITALITY DEVELOPMENT COSTS</h2>
+                                        <div className="bg-green-50 p-8 rounded-lg text-center">
+                                            <p className="text-green-700 font-semibold">Coming after Residential testing is complete</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Placeholder for Retail - Will be added after Hospitality */}
+                                {showRetail && (
+                                    <div className="module-card p-6">
+                                        <h2 className="text-2xl font-bold text-purple-800 mb-4">RETAIL DEVELOPMENT COSTS</h2>
+                                        <div className="bg-purple-50 p-8 rounded-lg text-center">
+                                            <p className="text-purple-700 font-semibold">Coming after Hospitality testing is complete</p>
                                         </div>
                                     </div>
                                 )}
@@ -1479,7 +2445,11 @@
             );
         }
 
-        ReactDOM.render(<RealEstatePlatform />, document.getElementById('root'));
-    </script>
+
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<RealEstatePlatform />);
+
+</script>
 </body>
 </html>
