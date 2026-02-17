@@ -1451,14 +1451,32 @@
 
                                 {/* Development Costs Tab */}
                                 {activeTab === 'costs' && (
-                                    <div className="module-card p-6">
-                                        <div className="flex flex-col items-center justify-center py-24 text-center">
-                                            <div className="text-6xl mb-6">🚧</div>
-                                            <h3 className="text-3xl font-bold text-gray-700 mb-3">Development Costs</h3>
-                                            <p className="text-gray-500 text-lg">Coming Soon</p>
-                                            <p className="text-gray-400 text-sm mt-2">This module is currently under development</p>
-                                        </div>
-                                    </div>
+                                    <DevCostsTab
+                                        showResidential={showResidential}
+                                        showHospitality={showHospitality}
+                                        showRetail={showRetail}
+                                        constructionPeriods={constructionPeriods}
+                                        modelType={modelType}
+                                        totalLandArea={totalLandArea}
+                                        cashPercent={cashPercent}
+                                        landValuePerSqm={landValuePerSqm}
+                                        residentialPercent={residentialPercent}
+                                        hospitalityPercent={hospitalityPercent}
+                                        retailPercent={retailPercent}
+                                        residentialTotalArea={residentialTotalArea}
+                                        residentialNetArea={residentialNetArea}
+                                        residentialGFA={residentialGFA}
+                                        residentialBUA={residentialBUA}
+                                        hospitalityTotalArea={hospitalityTotalArea}
+                                        hospitalityNetArea={hospitalityNetArea}
+                                        hospitalityGFA={hospitalityGFA}
+                                        hospitalityBUA={hospitalityBUA}
+                                        retailTotalArea={retailTotalArea}
+                                        retailNetArea={retailNetArea}
+                                        retailGFA={retailGFA}
+                                        retailBUA={retailBUA}
+                                        formatNumber={formatNumber}
+                                    />
                                 )}
 
                                 {/* Financing Tab */}
@@ -1475,6 +1493,302 @@
                             </div>
                         </div>
                     )}
+                </div>
+            );
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // DEVELOPMENT COSTS COMPONENT
+        // ═══════════════════════════════════════════════════════════════
+        function DevCostsTab(props) {
+            const {
+                showResidential, showHospitality, showRetail,
+                constructionPeriods, modelType,
+                totalLandArea, cashPercent, landValuePerSqm,
+                residentialPercent, hospitalityPercent, retailPercent,
+                residentialTotalArea, residentialNetArea, residentialGFA, residentialBUA,
+                hospitalityTotalArea, hospitalityNetArea, hospitalityGFA, hospitalityBUA,
+                retailTotalArea, retailNetArea, retailGFA, retailBUA,
+                formatNumber
+            } = props;
+
+            const cashLandValue  = totalLandArea * landValuePerSqm * (cashPercent / 100);
+            const resLandCost    = cashLandValue * (residentialPercent  / 100);
+            const hospLandCost   = cashLandValue * (hospitalityPercent  / 100);
+            const retLandCost    = cashLandValue * (retailPercent       / 100);
+
+            const makeDefaults = (landCost, buaRate) => [
+                { id:1,  name:'Land (Cash Portion)',            method:'fixed',           value:landCost, baseType:'',                       selectedCosts:[],      startPeriod:0, endPeriod:0,                  phasing:'100',             canDelete:false },
+                { id:2,  name:'Construction Cost',              method:'rate_bua',         value:buaRate,  baseType:'',                       selectedCosts:[],      startPeriod:7, endPeriod:constructionPeriods, phasing:'even',            canDelete:true  },
+                { id:3,  name:'Infrastructure Cost',            method:'rate_total_area',  value:150,      baseType:'',                       selectedCosts:[],      startPeriod:1, endPeriod:6,                  phasing:'30,25,20,15,7,3', canDelete:true  },
+                { id:4,  name:'Landscaping Cost',               method:'rate_total_area',  value:50,       baseType:'',                       selectedCosts:[],      startPeriod:1, endPeriod:6,                  phasing:'30,25,20,15,7,3', canDelete:true  },
+                { id:5,  name:'Pre-Operating Expenses',         method:'percent_base',     value:2,        baseType:'construction_infra_land', selectedCosts:[],      startPeriod:1, endPeriod:constructionPeriods, phasing:'even',            canDelete:true  },
+                { id:6,  name:'Professional Fee',               method:'percent_base',     value:5,        baseType:'excl_land',               selectedCosts:[],      startPeriod:1, endPeriod:constructionPeriods, phasing:'even',            canDelete:true  },
+                { id:7,  name:'Contingency Cost',               method:'percent_base',     value:3,        baseType:'excl_land',               selectedCosts:[],      startPeriod:1, endPeriod:constructionPeriods, phasing:'even',            canDelete:true  },
+                { id:8,  name:'Developer Fee/Performance Fee',  method:'percent_base',     value:10,       baseType:'custom_selection',        selectedCosts:[2,3,4], startPeriod:1, endPeriod:constructionPeriods, phasing:'even',            canDelete:true  },
+                { id:9,  name:'Electricity Station',            method:'fixed',            value:500000,   baseType:'',                       selectedCosts:[],      startPeriod:3, endPeriod:8,                  phasing:'even',            canDelete:true  },
+                { id:10, name:'Bridges',                        method:'fixed',            value:750000,   baseType:'',                       selectedCosts:[],      startPeriod:2, endPeriod:6,                  phasing:'even',            canDelete:true  },
+                { id:11, name:'Royal Commission Premium',        method:'percent_base',     value:2.5,      baseType:'land_cost',               selectedCosts:[],      startPeriod:0, endPeriod:0,                  phasing:'100',             canDelete:true  },
+                { id:12, name:'RETT (Real Estate Transfer Tax)', method:'percent_base',    value:5,        baseType:'cash_land_value',         selectedCosts:[],      startPeriod:0, endPeriod:0,                  phasing:'100',             canDelete:true  },
+            ];
+
+            const { useState, useEffect } = React;
+
+            const [resCosts,  setResCosts]  = useState(() => makeDefaults(resLandCost,  1200));
+            const [hospCosts, setHospCosts] = useState(() => makeDefaults(hospLandCost, 1500));
+            const [retCosts,  setRetCosts]  = useState(() => makeDefaults(retLandCost,  1000));
+            const [nextId, setNextId] = useState(13);
+
+            useEffect(() => {
+                setResCosts(prev  => prev.map(c => c.id===1 ? {...c, value:resLandCost}  : c));
+            }, [resLandCost]);
+            useEffect(() => {
+                setHospCosts(prev => prev.map(c => c.id===1 ? {...c, value:hospLandCost} : c));
+            }, [hospLandCost]);
+            useEffect(() => {
+                setRetCosts(prev  => prev.map(c => c.id===1 ? {...c, value:retLandCost}  : c));
+            }, [retLandCost]);
+
+            const getAreas = (asset) => {
+                if (asset==='res')  return { total:residentialTotalArea, net:residentialNetArea, gfa:residentialGFA, bua:residentialBUA };
+                if (asset==='hosp') return { total:hospitalityTotalArea, net:hospitalityNetArea, gfa:hospitalityGFA, bua:hospitalityBUA };
+                return                      { total:retailTotalArea,     net:retailNetArea,      gfa:retailGFA,      bua:retailBUA      };
+            };
+
+            const landCostForAsset = (asset) => asset==='res' ? resLandCost : asset==='hosp' ? hospLandCost : retLandCost;
+
+            const calcTotal = (cost, costs, asset) => {
+                const a = getAreas(asset);
+                if (cost.method==='fixed')          return parseFloat(cost.value)||0;
+                if (cost.method==='rate_total_area') return (parseFloat(cost.value)||0)*a.total;
+                if (cost.method==='rate_net_area')   return (parseFloat(cost.value)||0)*a.net;
+                if (cost.method==='rate_gfa')        return (parseFloat(cost.value)||0)*a.gfa;
+                if (cost.method==='rate_bua')        return (parseFloat(cost.value)||0)*a.bua;
+                if (cost.method==='percent_base') {
+                    const pct = (parseFloat(cost.value)||0)/100;
+                    let base = 0;
+                    if (cost.baseType==='construction_infra_land') {
+                        [2,3,4].forEach(id => { const c=costs.find(x=>x.id===id); if(c) base+=calcTotal(c,costs,asset); });
+                    } else if (cost.baseType==='excl_land') {
+                        costs.forEach(c => { if(c.id!==cost.id && c.id!==1) base+=calcTotal(c,costs,asset); });
+                    } else if (cost.baseType==='land_cost') {
+                        base = landCostForAsset(asset);
+                    } else if (cost.baseType==='cash_land_value') {
+                        base = landCostForAsset(asset);
+                    } else if (cost.baseType==='custom_selection') {
+                        (cost.selectedCosts||[]).forEach(id => { const c=costs.find(x=>x.id===id); if(c&&c.id!==cost.id) base+=calcTotal(c,costs,asset); });
+                    } else if (cost.baseType==='all_previous') {
+                        const idx=costs.findIndex(c=>c.id===cost.id);
+                        if(idx>0) costs.slice(0,idx).forEach(c=>{ base+=calcTotal(c,costs,asset); });
+                    }
+                    return base*pct;
+                }
+                return 0;
+            };
+
+            const validatePhasing = (phasing, start, end) => {
+                if (phasing.trim().toLowerCase()==='even') return {valid:true,error:''};
+                const periods = end-start+1;
+                const vals = phasing.split(',').map(v=>parseFloat(v.trim())).filter(v=>!isNaN(v));
+                if (vals.length!==periods) return {valid:false,error:`Need ${periods} values`};
+                const sum = vals.reduce((a,b)=>a+b,0);
+                if (Math.abs(sum-100)>0.01) return {valid:false,error:`Sum=${sum.toFixed(1)}% (need 100%)`};
+                return {valid:true,error:''};
+            };
+
+            const distribute = (cost, costs, asset) => {
+                const total = calcTotal(cost, costs, asset);
+                const dist  = Array(constructionPeriods+1).fill(0);
+                if (cost.phasing.trim().toLowerCase()==='even') {
+                    const n = cost.endPeriod - cost.startPeriod + 1;
+                    for (let i=cost.startPeriod; i<=cost.endPeriod && i<=constructionPeriods; i++) dist[i]=total/n;
+                } else {
+                    const pcts = cost.phasing.split(',').map(v=>parseFloat(v.trim())).filter(v=>!isNaN(v));
+                    pcts.forEach((p,i)=>{ const per=cost.startPeriod+i; if(per<=constructionPeriods) dist[per]=total*(p/100); });
+                }
+                return dist;
+            };
+
+            const buildCapex = (costs, asset) => {
+                const items  = costs.map(c=>({name:c.name, total:calcTotal(c,costs,asset), distribution:distribute(c,costs,asset)}));
+                const totals = Array(constructionPeriods+1).fill(0);
+                items.forEach(item=>item.distribution.forEach((v,i)=>totals[i]+=v));
+                return {items, totals};
+            };
+
+            const addCost = (setCosts) => {
+                const newId = nextId;
+                setNextId(n=>n+1);
+                setCosts(prev=>[...prev,{id:newId,name:'New Cost Item',method:'fixed',value:0,baseType:'',selectedCosts:[],startPeriod:1,endPeriod:constructionPeriods,phasing:'even',canDelete:true}]);
+            };
+            const delCost = (id, setCosts) => setCosts(prev=>prev.filter(c=>c.id!==id));
+            const updCost = (id, field, value, setCosts) => setCosts(prev=>prev.map(c=>c.id===id?{...c,[field]:value}:c));
+
+            const lbl = (i) => modelType==='monthly' ? `M${i}` : `Y${i}`;
+
+            const CostSection = ({title, color, costs, setCosts, asset, capex}) => (
+                <div className="module-card p-6 mb-6">
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}}>
+                        <h2 style={{fontSize:'1.2rem',fontWeight:'700'}} className={color}>{title}</h2>
+                        <button onClick={()=>addCost(setCosts)} className="btn-primary" style={{color:'white',padding:'6px 14px',borderRadius:'8px',fontWeight:'600',fontSize:'0.85rem',cursor:'pointer',border:'none'}}>+ Add Cost Item</button>
+                    </div>
+
+                    <div style={{overflowX:'auto',marginBottom:'24px'}}>
+                        <table style={{fontSize:'0.8rem',borderCollapse:'collapse',width:'100%',minWidth:'900px'}}>
+                            <thead>
+                                <tr style={{background:'#1f2937',color:'white'}}>
+                                    <th style={{padding:'8px',textAlign:'left',minWidth:'160px'}}>Cost Item</th>
+                                    <th style={{padding:'8px',textAlign:'left',minWidth:'160px'}}>Method</th>
+                                    <th style={{padding:'8px',textAlign:'left',minWidth:'100px'}}>Value</th>
+                                    <th style={{padding:'8px',textAlign:'left',minWidth:'180px'}}>Base Cost Type</th>
+                                    <th style={{padding:'8px',textAlign:'center',minWidth:'55px'}}>Start</th>
+                                    <th style={{padding:'8px',textAlign:'center',minWidth:'55px'}}>End</th>
+                                    <th style={{padding:'8px',textAlign:'left',minWidth:'150px'}}>Phasing</th>
+                                    <th style={{padding:'8px',textAlign:'right',minWidth:'110px'}}>Total Cost</th>
+                                    <th style={{padding:'8px',minWidth:'40px'}}></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {costs.map((cost,idx)=>{
+                                    const v = validatePhasing(cost.phasing, cost.startPeriod, cost.endPeriod);
+                                    const rowBg = idx%2===0?'white':'#f9fafb';
+                                    const inp = {width:'100%',padding:'4px',border:'1px solid #d1d5db',borderRadius:'4px',fontSize:'0.8rem'};
+                                    return (
+                                        <tr key={cost.id} style={{background:rowBg}}>
+                                            <td style={{padding:'5px',border:'1px solid #e5e7eb'}}>
+                                                <input type="text" value={cost.name} disabled={!cost.canDelete}
+                                                    style={{...inp,background:cost.canDelete?'#fef3c7':'#f3f4f6'}}
+                                                    onChange={e=>updCost(cost.id,'name',e.target.value,setCosts)} />
+                                            </td>
+                                            <td style={{padding:'5px',border:'1px solid #e5e7eb'}}>
+                                                <select value={cost.method} disabled={!cost.canDelete} style={inp}
+                                                    onChange={e=>updCost(cost.id,'method',e.target.value,setCosts)}>
+                                                    <option value="fixed">Fixed Amount</option>
+                                                    <option value="rate_total_area">Rate/SQM - Total Area</option>
+                                                    <option value="rate_net_area">Rate/SQM - Net Area</option>
+                                                    <option value="rate_gfa">Rate/SQM - GFA</option>
+                                                    <option value="rate_bua">Rate/SQM - BUA</option>
+                                                    <option value="percent_base">% of Base Costs</option>
+                                                </select>
+                                            </td>
+                                            <td style={{padding:'5px',border:'1px solid #e5e7eb'}}>
+                                                <div style={{display:'flex',alignItems:'center',gap:'2px'}}>
+                                                    <span style={{color:'#6b7280',fontSize:'0.75rem'}}>{cost.method==='percent_base'?'%':'$'}</span>
+                                                    <input type="number" value={cost.value} disabled={cost.id===1}
+                                                        style={{...inp,background:'#fef3c7',fontWeight:'600'}}
+                                                        onChange={e=>updCost(cost.id,'value',parseFloat(e.target.value)||0,setCosts)} />
+                                                </div>
+                                            </td>
+                                            <td style={{padding:'5px',border:'1px solid #e5e7eb'}}>
+                                                {cost.method==='percent_base' ? (
+                                                    <div>
+                                                        <select value={cost.baseType} style={{...inp,marginBottom:'3px'}}
+                                                            onChange={e=>updCost(cost.id,'baseType',e.target.value,setCosts)}>
+                                                            <option value="excl_land">Total Constr. (Excl. Land)</option>
+                                                            <option value="construction_infra_land">Constr+Infra+Landscaping</option>
+                                                            <option value="land_cost">Land Cost Only</option>
+                                                            <option value="cash_land_value">Cash Land Value</option>
+                                                            <option value="custom_selection">Custom Selection</option>
+                                                            <option value="all_previous">All Previous Costs</option>
+                                                        </select>
+                                                        {cost.baseType==='custom_selection' && (
+                                                            <div style={{maxHeight:'80px',overflowY:'auto',border:'1px solid #d1d5db',borderRadius:'4px',padding:'2px',fontSize:'0.7rem'}}>
+                                                                {costs.filter(c=>c.id!==cost.id&&c.id!==1).map(c=>(
+                                                                    <label key={c.id} style={{display:'block',padding:'1px 3px',cursor:'pointer'}}>
+                                                                        <input type="checkbox"
+                                                                            checked={(cost.selectedCosts||[]).includes(c.id)}
+                                                                            style={{marginRight:'4px'}}
+                                                                            onChange={e=>{
+                                                                                const sel=cost.selectedCosts||[];
+                                                                                updCost(cost.id,'selectedCosts',e.target.checked?[...sel,c.id]:sel.filter(x=>x!==c.id),setCosts);
+                                                                            }} />
+                                                                        {c.name}
+                                                                    </label>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : <span style={{color:'#9ca3af',fontSize:'0.75rem'}}>N/A</span>}
+                                            </td>
+                                            <td style={{padding:'5px',border:'1px solid #e5e7eb',textAlign:'center'}}>
+                                                <input type="number" value={cost.startPeriod} min="0" max={constructionPeriods} disabled={cost.id===1}
+                                                    style={{...inp,width:'50px',textAlign:'center'}}
+                                                    onChange={e=>updCost(cost.id,'startPeriod',parseInt(e.target.value)||0,setCosts)} />
+                                            </td>
+                                            <td style={{padding:'5px',border:'1px solid #e5e7eb',textAlign:'center'}}>
+                                                <input type="number" value={cost.endPeriod} min="0" max={constructionPeriods} disabled={cost.id===1}
+                                                    style={{...inp,width:'50px',textAlign:'center'}}
+                                                    onChange={e=>updCost(cost.id,'endPeriod',parseInt(e.target.value)||0,setCosts)} />
+                                            </td>
+                                            <td style={{padding:'5px',border:'1px solid #e5e7eb'}}>
+                                                <input type="text" value={cost.phasing} disabled={cost.id===1}
+                                                    placeholder="30,25,20,15,7,3 or even"
+                                                    style={{...inp,borderColor:v.valid?'#d1d5db':'#ef4444'}}
+                                                    onChange={e=>updCost(cost.id,'phasing',e.target.value,setCosts)} />
+                                                {!v.valid && <div style={{color:'#ef4444',fontSize:'0.65rem'}}>{v.error}</div>}
+                                            </td>
+                                            <td style={{padding:'5px',border:'1px solid #e5e7eb',textAlign:'right',fontWeight:'600'}}>
+                                                ${formatNumber(calcTotal(cost,costs,asset))}
+                                            </td>
+                                            <td style={{padding:'5px',border:'1px solid #e5e7eb',textAlign:'center'}}>
+                                                {cost.canDelete && <button onClick={()=>delCost(cost.id,setCosts)} style={{background:'none',border:'none',cursor:'pointer',color:'#ef4444',fontSize:'1rem'}}>🗑️</button>}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3 style={{fontSize:'1rem',fontWeight:'700',marginBottom:'10px'}} className={color}>{title} — CAPEX SUMMARY</h3>
+                    <div style={{overflowX:'auto'}}>
+                        <table style={{fontSize:'0.78rem',borderCollapse:'collapse',width:'100%'}}>
+                            <thead>
+                                <tr style={{background:'#1f2937',color:'white'}}>
+                                    <th style={{padding:'7px',textAlign:'left',minWidth:'160px',position:'sticky',left:0,background:'#1f2937'}}>Description</th>
+                                    <th style={{padding:'7px',textAlign:'right',minWidth:'110px'}}>Total</th>
+                                    {Array.from({length:constructionPeriods+1},(_,i)=>(
+                                        <th key={i} style={{padding:'7px',textAlign:'right',minWidth:'65px',whiteSpace:'nowrap'}}>{lbl(i)}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {capex.items.map((item,idx)=>{
+                                    const bg = idx%2===0?'white':'#f9fafb';
+                                    return (
+                                        <tr key={idx} style={{background:bg}}>
+                                            <td style={{padding:'6px',border:'1px solid #e5e7eb',fontWeight:'500',position:'sticky',left:0,background:bg}}>{item.name}</td>
+                                            <td style={{padding:'6px',border:'1px solid #e5e7eb',textAlign:'right',fontWeight:'600'}}>${formatNumber(item.total)}</td>
+                                            {item.distribution.map((amt,pi)=>(
+                                                <td key={pi} style={{padding:'6px',border:'1px solid #e5e7eb',textAlign:'right',color:amt>0?'#111827':'#d1d5db'}}>
+                                                    {amt>0?`$${formatNumber(amt)}`:'-'}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    );
+                                })}
+                                <tr style={{background:'#dbeafe',fontWeight:'700'}}>
+                                    <td style={{padding:'7px',border:'1px solid #93c5fd',position:'sticky',left:0,background:'#dbeafe'}}>TOTAL CAPEX</td>
+                                    <td style={{padding:'7px',border:'1px solid #93c5fd',textAlign:'right'}}>${formatNumber(capex.totals.reduce((a,b)=>a+b,0))}</td>
+                                    {capex.totals.map((t,pi)=>(
+                                        <td key={pi} style={{padding:'7px',border:'1px solid #93c5fd',textAlign:'right'}}>{t>0?`$${formatNumber(t)}`:'-'}</td>
+                                    ))}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+
+            const resCapex  = buildCapex(resCosts,  'res');
+            const hospCapex = buildCapex(hospCosts, 'hosp');
+            const retCapex  = buildCapex(retCosts,  'ret');
+
+            return (
+                <div>
+                    {showResidential && <CostSection title="RESIDENTIAL DEVELOPMENT COSTS" color="text-blue-800"   costs={resCosts}  setCosts={setResCosts}  asset="res"  capex={resCapex}  />}
+                    {showHospitality && <CostSection title="HOSPITALITY DEVELOPMENT COSTS"  color="text-green-800"  costs={hospCosts} setCosts={setHospCosts} asset="hosp" capex={hospCapex} />}
+                    {showRetail      && <CostSection title="RETAIL DEVELOPMENT COSTS"       color="text-purple-800" costs={retCosts}  setCosts={setRetCosts}  asset="ret"  capex={retCapex}  />}
                 </div>
             );
         }
