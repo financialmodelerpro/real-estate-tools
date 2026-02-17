@@ -862,6 +862,14 @@
                                 >
                                     Module 1
                                 </button>
+                                <button
+                                    onClick={() => setActiveModule('devcosts')}
+                                    className={`px-6 py-4 font-semibold transition ${
+                                        activeModule === 'devcosts' ? 'tab-active' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Development Costs
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1873,244 +1881,99 @@
 
                                 {/* Development Costs Tab */}
                                 {activeTab === 'costs' && (
-                                    <div className="space-y-8">
-                                        {/* RESIDENTIAL DEVELOPMENT COSTS */}
-                                        {showResidential && (
-                                            <div className="module-card p-6">
-                                                <div className="flex justify-between items-center mb-6">
-                                                    <h2 className="text-2xl font-bold text-blue-800">RESIDENTIAL DEVELOPMENT COSTS</h2>
-                                                    <button
-                                                        onClick={addResidentialCost}
-                                                        className="btn-primary text-white px-4 py-2 rounded-lg font-semibold"
-                                                    >
-                                                        + Add Cost Item
-                                                    </button>
-                                                </div>
-
-                                                {/* Cost Input Table */}
-                                                <div className="overflow-x-auto mb-8">
-                                                    <table className="w-full cost-input-table">
-                                                        <thead>
-                                                            <tr className="bg-gray-700 text-white">
-                                                                <th className="p-3 text-left">Cost Item Name</th>
-                                                                <th className="p-3 text-left">Calculation Method</th>
-                                                                <th className="p-3 text-left">Value</th>
-                                                                <th className="p-3 text-left">Base Cost Type</th>
-                                                                <th className="p-3 text-center">Start Period</th>
-                                                                <th className="p-3 text-center">End Period</th>
-                                                                <th className="p-3 text-left">Phasing</th>
-                                                                <th className="p-3 text-right">Total Cost</th>
-                                                                <th className="p-3 text-center">Actions</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {residentialCosts.map((cost, idx) => {
-                                                                const validation = validatePhasing(cost.phasing, cost.startPeriod, cost.endPeriod);
-                                                                return (
-                                                                    <tr key={cost.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                                                        <td className="p-2">
-                                                                            <input
-                                                                                type="text"
-                                                                                value={cost.name}
-                                                                                onChange={(e) => updateResidentialCost(cost.id, 'name', e.target.value)}
-                                                                                disabled={!cost.canDelete}
-                                                                                className="w-full"
-                                                                            />
-                                                                        </td>
-                                                                        <td className="p-2">
-                                                                            <select
-                                                                                value={cost.method}
-                                                                                onChange={(e) => updateResidentialCost(cost.id, 'method', e.target.value)}
-                                                                                disabled={!cost.canDelete}
-                                                                            >
-                                                                                <option value="fixed">Fixed Amount</option>
-                                                                                <option value="rate_total_area">Rate per SQM - Total Area</option>
-                                                                                <option value="rate_net_area">Rate per SQM - Net Area</option>
-                                                                                <option value="rate_gfa">Rate per SQM - GFA</option>
-                                                                                <option value="rate_bua">Rate per SQM - BUA</option>
-                                                                                <option value="percent_base">% of Base Costs</option>
-                                                                            </select>
-                                                                        </td>
-                                                                        <td className="p-2">
-                                                                            <div className="flex items-center">
-                                                                                {cost.method === 'percent_base' && <span className="mr-1">%</span>}
-                                                                                {cost.method.startsWith('rate_') && <span className="mr-1">$</span>}
-                                                                                <input
-                                                                                    type="number"
-                                                                                    value={cost.value}
-                                                                                    onChange={(e) => updateResidentialCost(cost.id, 'value', parseFloat(e.target.value) || 0)}
-                                                                                    disabled={cost.id === 1}
-                                                                                    className="w-full"
-                                                                                />
-                                                                                {cost.method.startsWith('rate_') && <span className="ml-1">/sqm</span>}
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className="p-2">
-                                                                            {cost.method === 'percent_base' ? (
-                                                                                <div>
-                                                                                    <select
-                                                                                        value={cost.baseType}
-                                                                                        onChange={(e) => updateResidentialCost(cost.id, 'baseType', e.target.value)}
-                                                                                        className="w-full mb-1"
-                                                                                    >
-                                                                                        <option value="infrastructure_only">Infrastructure Only</option>
-                                                                                        <option value="construction_only">Construction Only</option>
-                                                                                        <option value="infra_construction">Infra + Construction</option>
-                                                                                        <option value="construction_infra_landscaping">Construction + Infra + Landscaping</option>
-                                                                                        <option value="total_construction_excluding_land">Total Construction (Excl. Land)</option>
-                                                                                        <option value="land_cost">Land Cost</option>
-                                                                                        <option value="cash_land_value">Cash Land Value</option>
-                                                                                        <option value="custom_selection">Custom Selection</option>
-                                                                                        <option value="all_previous">All Previous Costs</option>
-                                                                                    </select>
-                                                                                    {cost.baseType === 'custom_selection' && (
-                                                                                        <div className="text-xs max-h-32 overflow-y-auto border border-gray-300 rounded p-1">
-                                                                                            {residentialCosts.filter(c => c.id !== cost.id && c.id !== 1).map(c => (
-                                                                                                <label key={c.id} className="block hover:bg-gray-100 px-1">
-                                                                                                    <input
-                                                                                                        type="checkbox"
-                                                                                                        checked={cost.selectedCosts?.includes(c.id)}
-                                                                                                        onChange={(e) => {
-                                                                                                            const selected = cost.selectedCosts || [];
-                                                                                                            const newSelected = e.target.checked 
-                                                                                                                ? [...selected, c.id]
-                                                                                                                : selected.filter(id => id !== c.id);
-                                                                                                            updateResidentialCost(cost.id, 'selectedCosts', newSelected);
-                                                                                                        }}
-                                                                                                        className="mr-1"
-                                                                                                    />
-                                                                                                    {c.name}
-                                                                                                </label>
-                                                                                            ))}
-                                                                                        </div>
-                                                                                    )}
-                                                                                </div>
-                                                                            ) : (
-                                                                                <span className="text-gray-400">N/A</span>
-                                                                            )}
-                                                                        </td>
-                                                                        <td className="p-2 text-center">
-                                                                            <input
-                                                                                type="number"
-                                                                                value={cost.startPeriod}
-                                                                                onChange={(e) => updateResidentialCost(cost.id, 'startPeriod', parseInt(e.target.value) || 0)}
-                                                                                min="0"
-                                                                                max={constructionPeriods}
-                                                                                disabled={cost.id === 1}
-                                                                                className="w-20 text-center"
-                                                                            />
-                                                                        </td>
-                                                                        <td className="p-2 text-center">
-                                                                            <input
-                                                                                type="number"
-                                                                                value={cost.endPeriod}
-                                                                                onChange={(e) => updateResidentialCost(cost.id, 'endPeriod', parseInt(e.target.value) || 0)}
-                                                                                min="0"
-                                                                                max={constructionPeriods}
-                                                                                disabled={cost.id === 1}
-                                                                                className="w-20 text-center"
-                                                                            />
-                                                                        </td>
-                                                                        <td className="p-2">
-                                                                            <input
-                                                                                type="text"
-                                                                                value={cost.phasing}
-                                                                                onChange={(e) => updateResidentialCost(cost.id, 'phasing', e.target.value)}
-                                                                                disabled={cost.id === 1}
-                                                                                className="w-full"
-                                                                                placeholder="30,25,20,15,7,3 or 'even'"
-                                                                            />
-                                                                            {!validation.valid && (
-                                                                                <div className="validation-error">{validation.error}</div>
-                                                                            )}
-                                                                        </td>
-                                                                        <td className="p-2 text-right font-semibold">
-                                                                            ${formatNumber(calculateItemTotal(cost, 'residential'))}
-                                                                        </td>
-                                                                        <td className="p-2 text-center">
-                                                                            {cost.canDelete && (
-                                                                                <button
-                                                                                    onClick={() => deleteResidentialCost(cost.id)}
-                                                                                    className="text-red-600 hover:text-red-800 text-xl"
-                                                                                >
-                                                                                    🗑️
-                                                                                </button>
-                                                                            )}
-                                                                        </td>
-                                                                    </tr>
-                                                                );
-                                                            })}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-
-                                                {/* CAPEX Summary Table */}
-                                                <div>
-                                                    <h3 className="text-xl font-bold text-blue-800 mb-4">RESIDENTIAL CAPEX SUMMARY</h3>
-                                                    <div className="overflow-x-auto">
-                                                        <table className="w-full text-sm">
-                                                            <thead>
-                                                                <tr className="bg-gray-700 text-white">
-                                                                    <th className="p-3 text-left">Description</th>
-                                                                    <th className="p-3 text-right">Total</th>
-                                                                    {Array.from({ length: constructionPeriods + 1 }, (_, i) => (
-                                                                        <th key={i} className="p-3 text-right whitespace-nowrap">
-                                                                            {modelType === 'monthly' ? 'Month' : 'Year'} {i}
-                                                                        </th>
-                                                                    ))}
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {residentialCapex.items.map((item, idx) => (
-                                                                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                                                        <td className="p-2 font-medium">{item.name}</td>
-                                                                        <td className="p-2 text-right font-semibold">
-                                                                            ${formatNumber(item.total)}
-                                                                        </td>
-                                                                        {item.distribution.map((amount, periodIdx) => (
-                                                                            <td key={periodIdx} className="p-2 text-right">
-                                                                                {amount > 0 ? `$${formatNumber(amount)}` : '-'}
-                                                                            </td>
-                                                                        ))}
-                                                                    </tr>
-                                                                ))}
-                                                                <tr className="total-row">
-                                                                    <td className="p-3 font-bold">TOTAL CAPEX</td>
-                                                                    <td className="p-3 text-right font-bold">
-                                                                        ${formatNumber(residentialCapex.totals.reduce((a, b) => a + b, 0))}
-                                                                    </td>
-                                                                    {residentialCapex.totals.map((total, idx) => (
-                                                                        <td key={idx} className="p-3 text-right font-bold">
-                                                                            {total > 0 ? `$${formatNumber(total)}` : '-'}
-                                                                        </td>
-                                                                    ))}
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
+                                    <div className="module-card p-6">
+                                        <h3 className="text-2xl font-bold mb-6 text-gray-800">Development Costs - Simple Summary</h3>
+                                        
+                                        <div className="space-y-6">
+                                            {/* Residential Summary */}
+                                            <div className="p-4 bg-blue-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Residential</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>Land (Cash Portion):</span>
+                                                        <span className="font-bold">${formatNumber(residentialLandValue * (cashPercent / 100))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Infrastructure ({formatNumber(residentialNetArea)} sqm × $500):</span>
+                                                        <span className="font-bold">${formatNumber(residentialNetArea * 500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Construction ({formatNumber(residentialBUA)} sqm × $1,500):</span>
+                                                        <span className="font-bold">${formatNumber(residentialBUA * 1500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-t pt-2 mt-2">
+                                                        <span className="font-bold">Total CAPEX:</span>
+                                                        <span className="font-bold text-blue-600 text-lg">
+                                                            ${formatNumber((residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500))}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
-                                        )}
 
-                                        {/* Placeholder for Hospitality - Will be added after testing */}
-                                        {showHospitality && (
-                                            <div className="module-card p-6">
-                                                <h2 className="text-2xl font-bold text-green-800 mb-4">HOSPITALITY DEVELOPMENT COSTS</h2>
-                                                <div className="bg-green-50 p-8 rounded-lg text-center">
-                                                    <p className="text-green-700 font-semibold">Coming after Residential testing is complete</p>
+                                            {/* Hospitality Summary */}
+                                            <div className="p-4 bg-green-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Hospitality</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>Land (Cash Portion):</span>
+                                                        <span className="font-bold">${formatNumber(hospitalityLandValue * (cashPercent / 100))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Infrastructure ({formatNumber(hospitalityNetArea)} sqm × $500):</span>
+                                                        <span className="font-bold">${formatNumber(hospitalityNetArea * 500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Construction ({formatNumber(hospitalityBUA)} sqm × $1,500):</span>
+                                                        <span className="font-bold">${formatNumber(hospitalityBUA * 1500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-t pt-2 mt-2">
+                                                        <span className="font-bold">Total CAPEX:</span>
+                                                        <span className="font-bold text-green-600 text-lg">
+                                                            ${formatNumber((hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500))}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        )}
 
-                                        {/* Placeholder for Retail - Will be added after Hospitality */}
-                                        {showRetail && (
-                                            <div className="module-card p-6">
-                                                <h2 className="text-2xl font-bold text-purple-800 mb-4">RETAIL DEVELOPMENT COSTS</h2>
-                                                <div className="bg-purple-50 p-8 rounded-lg text-center">
-                                                    <p className="text-purple-700 font-semibold">Coming after Hospitality testing is complete</p>
+                                            {/* Retail Summary */}
+                                            <div className="p-4 bg-purple-50 rounded-lg">
+                                                <h4 className="font-bold text-lg mb-3">Retail</h4>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span>Land (Cash Portion):</span>
+                                                        <span className="font-bold">${formatNumber(retailLandValue * (cashPercent / 100))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Infrastructure ({formatNumber(retailNetArea)} sqm × $500):</span>
+                                                        <span className="font-bold">${formatNumber(retailNetArea * 500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Construction ({formatNumber(retailBUA)} sqm × $1,500):</span>
+                                                        <span className="font-bold">${formatNumber(retailBUA * 1500)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-t pt-2 mt-2">
+                                                        <span className="font-bold">Total CAPEX:</span>
+                                                        <span className="font-bold text-purple-600 text-lg">
+                                                            ${formatNumber((retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500))}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        )}
+
+                                            {/* Grand Total */}
+                                            <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="font-bold text-xl">TOTAL PROJECT CAPEX:</span>
+                                                    <span className="font-bold text-3xl">
+                                                        ${formatNumber(
+                                                            (residentialLandValue * (cashPercent / 100)) + (residentialNetArea * 500) + (residentialBUA * 1500) +
+                                                            (hospitalityLandValue * (cashPercent / 100)) + (hospitalityNetArea * 500) + (hospitalityBUA * 1500) +
+                                                            (retailLandValue * (cashPercent / 100)) + (retailNetArea * 500) + (retailBUA * 1500)
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
@@ -2333,6 +2196,250 @@
                         </div>
                     )}
 
+                    {/* DEVELOPMENT COSTS MODULE */}
+                    {activeModule === 'devcosts' && (
+                        <div className="container mx-auto px-6 py-6">
+                            <div className="space-y-8">
+                                {/* RESIDENTIAL DEVELOPMENT COSTS */}
+                                {showResidential && (
+                                    <div className="module-card p-6">
+                                        <div className="flex justify-between items-center mb-6">
+                                            <h2 className="text-2xl font-bold text-blue-800">RESIDENTIAL DEVELOPMENT COSTS</h2>
+                                            <button
+                                                onClick={addResidentialCost}
+                                                className="btn-primary text-white px-4 py-2 rounded-lg font-semibold"
+                                            >
+                                                + Add Cost Item
+                                            </button>
+                                        </div>
+
+                                        {/* Cost Input Table */}
+                                        <div className="overflow-x-auto mb-8">
+                                            <table className="w-full cost-input-table">
+                                                <thead>
+                                                    <tr className="bg-gray-700 text-white">
+                                                        <th className="p-3 text-left">Cost Item Name</th>
+                                                        <th className="p-3 text-left">Calculation Method</th>
+                                                        <th className="p-3 text-left">Value</th>
+                                                        <th className="p-3 text-left">Base Cost Type</th>
+                                                        <th className="p-3 text-center">Start Period</th>
+                                                        <th className="p-3 text-center">End Period</th>
+                                                        <th className="p-3 text-left">Phasing</th>
+                                                        <th className="p-3 text-right">Total Cost</th>
+                                                        <th className="p-3 text-center">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {residentialCosts.map((cost, idx) => {
+                                                        const validation = validatePhasing(cost.phasing, cost.startPeriod, cost.endPeriod);
+                                                        return (
+                                                            <tr key={cost.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                                <td className="p-2">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={cost.name}
+                                                                        onChange={(e) => updateResidentialCost(cost.id, 'name', e.target.value)}
+                                                                        disabled={!cost.canDelete}
+                                                                        className="w-full"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-2">
+                                                                    <select
+                                                                        value={cost.method}
+                                                                        onChange={(e) => updateResidentialCost(cost.id, 'method', e.target.value)}
+                                                                        disabled={!cost.canDelete}
+                                                                    >
+                                                                        <option value="fixed">Fixed Amount</option>
+                                                                        <option value="rate_total_area">Rate per SQM - Total Area</option>
+                                                                        <option value="rate_net_area">Rate per SQM - Net Area</option>
+                                                                        <option value="rate_gfa">Rate per SQM - GFA</option>
+                                                                        <option value="rate_bua">Rate per SQM - BUA</option>
+                                                                        <option value="percent_base">% of Base Costs</option>
+                                                                    </select>
+                                                                </td>
+                                                                <td className="p-2">
+                                                                    <div className="flex items-center">
+                                                                        {cost.method === 'percent_base' && <span className="mr-1">%</span>}
+                                                                        {cost.method.startsWith('rate_') && <span className="mr-1">$</span>}
+                                                                        <input
+                                                                            type="number"
+                                                                            value={cost.value}
+                                                                            onChange={(e) => updateResidentialCost(cost.id, 'value', parseFloat(e.target.value) || 0)}
+                                                                            disabled={cost.id === 1}
+                                                                            className="w-full"
+                                                                        />
+                                                                        {cost.method.startsWith('rate_') && <span className="ml-1">/sqm</span>}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="p-2">
+                                                                    {cost.method === 'percent_base' ? (
+                                                                        <div>
+                                                                            <select
+                                                                                value={cost.baseType}
+                                                                                onChange={(e) => updateResidentialCost(cost.id, 'baseType', e.target.value)}
+                                                                                className="w-full mb-1"
+                                                                            >
+                                                                                <option value="infrastructure_only">Infrastructure Only</option>
+                                                                                <option value="construction_only">Construction Only</option>
+                                                                                <option value="infra_construction">Infra + Construction</option>
+                                                                                <option value="construction_infra_landscaping">Construction + Infra + Landscaping</option>
+                                                                                <option value="total_construction_excluding_land">Total Construction (Excl. Land)</option>
+                                                                                <option value="land_cost">Land Cost</option>
+                                                                                <option value="cash_land_value">Cash Land Value</option>
+                                                                                <option value="custom_selection">Custom Selection</option>
+                                                                                <option value="all_previous">All Previous Costs</option>
+                                                                            </select>
+                                                                            {cost.baseType === 'custom_selection' && (
+                                                                                <div className="text-xs">
+                                                                                    {residentialCosts.filter(c => c.id !== cost.id && c.id !== 1).map(c => (
+                                                                                        <label key={c.id} className="block">
+                                                                                            <input
+                                                                                                type="checkbox"
+                                                                                                checked={cost.selectedCosts?.includes(c.id)}
+                                                                                                onChange={(e) => {
+                                                                                                    const selected = cost.selectedCosts || [];
+                                                                                                    const newSelected = e.target.checked 
+                                                                                                        ? [...selected, c.id]
+                                                                                                        : selected.filter(id => id !== c.id);
+                                                                                                    updateResidentialCost(cost.id, 'selectedCosts', newSelected);
+                                                                                                }}
+                                                                                                className="mr-1"
+                                                                                            />
+                                                                                            {c.name}
+                                                                                        </label>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-gray-400">N/A</span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="p-2 text-center">
+                                                                    <input
+                                                                        type="number"
+                                                                        value={cost.startPeriod}
+                                                                        onChange={(e) => updateResidentialCost(cost.id, 'startPeriod', parseInt(e.target.value) || 0)}
+                                                                        min="0"
+                                                                        max={constructionPeriods}
+                                                                        disabled={cost.id === 1}
+                                                                        className="w-20 text-center"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-2 text-center">
+                                                                    <input
+                                                                        type="number"
+                                                                        value={cost.endPeriod}
+                                                                        onChange={(e) => updateResidentialCost(cost.id, 'endPeriod', parseInt(e.target.value) || 0)}
+                                                                        min="0"
+                                                                        max={constructionPeriods}
+                                                                        disabled={cost.id === 1}
+                                                                        className="w-20 text-center"
+                                                                    />
+                                                                </td>
+                                                                <td className="p-2">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={cost.phasing}
+                                                                        onChange={(e) => updateResidentialCost(cost.id, 'phasing', e.target.value)}
+                                                                        disabled={cost.id === 1}
+                                                                        className="w-full"
+                                                                        placeholder="30,25,20,15,7,3 or 'even'"
+                                                                    />
+                                                                    {!validation.valid && (
+                                                                        <div className="validation-error">{validation.error}</div>
+                                                                    )}
+                                                                </td>
+                                                                <td className="p-2 text-right font-semibold">
+                                                                    ${formatNumber(calculateItemTotal(cost, 'residential'))}
+                                                                </td>
+                                                                <td className="p-2 text-center">
+                                                                    {cost.canDelete && (
+                                                                        <button
+                                                                            onClick={() => deleteResidentialCost(cost.id)}
+                                                                            className="text-red-600 hover:text-red-800 text-xl"
+                                                                        >
+                                                                            🗑️
+                                                                        </button>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* CAPEX Summary Table */}
+                                        <div>
+                                            <h3 className="text-xl font-bold text-blue-800 mb-4">RESIDENTIAL CAPEX SUMMARY</h3>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-sm">
+                                                    <thead>
+                                                        <tr className="bg-gray-700 text-white">
+                                                            <th className="p-3 text-left">Description</th>
+                                                            <th className="p-3 text-right">Total</th>
+                                                            {Array.from({ length: constructionPeriods + 1 }, (_, i) => (
+                                                                <th key={i} className="p-3 text-right whitespace-nowrap">
+                                                                    {modelType === 'monthly' ? 'Month' : 'Year'} {i}
+                                                                </th>
+                                                            ))}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {residentialCapex.items.map((item, idx) => (
+                                                            <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                                <td className="p-2 font-medium">{item.name}</td>
+                                                                <td className="p-2 text-right font-semibold">
+                                                                    ${formatNumber(item.total)}
+                                                                </td>
+                                                                {item.distribution.map((amount, periodIdx) => (
+                                                                    <td key={periodIdx} className="p-2 text-right">
+                                                                        {amount > 0 ? `$${formatNumber(amount)}` : '-'}
+                                                                    </td>
+                                                                ))}
+                                                            </tr>
+                                                        ))}
+                                                        <tr className="total-row">
+                                                            <td className="p-3 font-bold">TOTAL CAPEX</td>
+                                                            <td className="p-3 text-right font-bold">
+                                                                ${formatNumber(residentialCapex.totals.reduce((a, b) => a + b, 0))}
+                                                            </td>
+                                                            {residentialCapex.totals.map((total, idx) => (
+                                                                <td key={idx} className="p-3 text-right font-bold">
+                                                                    {total > 0 ? `$${formatNumber(total)}` : '-'}
+                                                                </td>
+                                                            ))}
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Placeholder for Hospitality - Will be added after testing */}
+                                {showHospitality && (
+                                    <div className="module-card p-6">
+                                        <h2 className="text-2xl font-bold text-green-800 mb-4">HOSPITALITY DEVELOPMENT COSTS</h2>
+                                        <div className="bg-green-50 p-8 rounded-lg text-center">
+                                            <p className="text-green-700 font-semibold">Coming after Residential testing is complete</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Placeholder for Retail - Will be added after Hospitality */}
+                                {showRetail && (
+                                    <div className="module-card p-6">
+                                        <h2 className="text-2xl font-bold text-purple-800 mb-4">RETAIL DEVELOPMENT COSTS</h2>
+                                        <div className="bg-purple-50 p-8 rounded-lg text-center">
+                                            <p className="text-purple-700 font-semibold">Coming after Hospitality testing is complete</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
